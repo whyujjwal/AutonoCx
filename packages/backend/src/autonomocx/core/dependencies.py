@@ -137,9 +137,7 @@ async def get_current_user_ws(
     if not payload.sub:
         raise AuthenticationError("Token is missing a subject claim.")
 
-    result = await db.execute(
-        select(User).where(User.id == payload.sub)
-    )
+    result = await db.execute(select(User).where(User.id == payload.sub))
     user = result.scalar_one_or_none()
     if user is None:
         raise AuthenticationError("User not found.")
