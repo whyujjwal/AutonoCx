@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from autonomocx.core.exceptions import ConflictError, NotFoundError
+from autonomocx.core.exceptions import NotFoundError
 from autonomocx.models.organization import Organization
 
 logger = structlog.get_logger(__name__)
@@ -35,14 +35,13 @@ def _hash_key(raw: str) -> str:
 # Organization CRUD
 # ---------------------------------------------------------------------------
 
+
 async def get_organization(
     db: AsyncSession,
     org_id: uuid.UUID,
 ) -> Organization:
     """Return an organization by id.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(Organization).where(Organization.id == org_id)
-    )
+    result = await db.execute(select(Organization).where(Organization.id == org_id))
     org = result.scalar_one_or_none()
     if org is None:
         raise NotFoundError(f"Organization {org_id} not found.")
@@ -71,6 +70,7 @@ async def update_organization(
 # ---------------------------------------------------------------------------
 # API Key management (stored inside org.settings JSONB)
 # ---------------------------------------------------------------------------
+
 
 async def create_api_key(
     db: AsyncSession,

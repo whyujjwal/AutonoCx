@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy import select
@@ -14,8 +14,6 @@ from autonomocx.core.config import get_settings
 from autonomocx.core.exceptions import (
     AuthenticationError,
     ConflictError,
-    NotFoundError,
-    ValidationError,
 )
 from autonomocx.core.security import (
     create_access_token,
@@ -34,6 +32,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _slugify(name: str) -> str:
     """Convert an organization name into a URL-safe slug."""
@@ -67,6 +66,7 @@ def _build_token_response(user: User) -> TokenResponse:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 async def authenticate_user(
     db: AsyncSession,
@@ -118,9 +118,7 @@ async def create_user_and_org(
     slug = base_slug
     suffix = 0
     while True:
-        dup = await db.execute(
-            select(Organization).where(Organization.slug == slug)
-        )
+        dup = await db.execute(select(Organization).where(Organization.slug == slug))
         if dup.scalar_one_or_none() is None:
             break
         suffix += 1

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Requests
@@ -16,24 +15,24 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class AgentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = Field(None, max_length=64)
-    llm_model: Optional[str] = Field(None, max_length=128)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1)
-    tools_enabled: Optional[list[uuid.UUID]] = Field(default_factory=list)
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = Field(None, max_length=64)
+    llm_model: str | None = Field(None, max_length=128)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1)
+    tools_enabled: list[uuid.UUID] | None = Field(default_factory=list)
 
 
 class AgentUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = Field(None, max_length=64)
-    llm_model: Optional[str] = Field(None, max_length=128)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1)
-    tools_enabled: Optional[list[uuid.UUID]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = Field(None, max_length=64)
+    llm_model: str | None = Field(None, max_length=128)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1)
+    tools_enabled: list[uuid.UUID] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -45,16 +44,16 @@ class AgentResponse(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
     name: str
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = None
-    llm_model: Optional[str] = None
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    tools_enabled: Optional[list[uuid.UUID]] = None
-    fallback_agent_id: Optional[uuid.UUID] = None
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
+    tools_enabled: list[uuid.UUID] | None = None
+    fallback_agent_id: uuid.UUID | None = None
     is_active: bool
-    metadata: Optional[dict[str, Any]] = Field(None, alias="metadata_")
+    metadata: dict[str, Any] | None = Field(None, alias="metadata_")
     created_at: datetime
     updated_at: datetime
 
@@ -72,9 +71,5 @@ class AgentTestRequest(BaseModel):
 
 class AgentTestResponse(BaseModel):
     response: str
-    latency_ms: float = Field(
-        ..., description="Round-trip time in milliseconds"
-    )
-    tokens_used: int = Field(
-        ..., description="Total tokens (prompt + completion) consumed"
-    )
+    latency_ms: float = Field(..., description="Round-trip time in milliseconds")
+    tokens_used: int = Field(..., description="Total tokens (prompt + completion) consumed")

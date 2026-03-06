@@ -46,7 +46,7 @@ class RedisManager:
 
         # Quick health check
         try:
-            await self._client.ping()
+            await self._client.ping()  # type: ignore[misc]
             logger.info("redis_connected", url=settings.redis_url)
         except Exception:
             logger.error("redis_connection_failed", url=settings.redis_url)

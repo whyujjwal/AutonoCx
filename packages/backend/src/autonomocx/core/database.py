@@ -15,8 +15,10 @@ from autonomocx.core.config import get_settings
 
 # ── Declarative base for all ORM models ───────────────────────────────
 
+
 class Base(DeclarativeBase):
     """Shared declarative base.  All models inherit from this."""
+
     pass
 
 
@@ -54,7 +56,7 @@ def _get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _async_session_factory
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """FastAPI dependency that yields an async database session.
 
     The session is committed on success and rolled back on exception,

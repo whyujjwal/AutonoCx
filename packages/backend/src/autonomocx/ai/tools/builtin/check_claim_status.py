@@ -32,7 +32,7 @@ TOOL_PARAMETERS_SCHEMA: dict[str, Any] = {
 class CheckClaimStatusTool:
     """Simulated claim status lookup tool."""
 
-    _STATUSES = [
+    _STATUSES: list[dict[str, Any]] = [
         {
             "status": "under_review",
             "description": "Your claim is currently being reviewed by our team.",
@@ -75,7 +75,7 @@ class CheckClaimStatusTool:
         # Deterministic but varied results based on claim_id hash
         status_info = self._STATUSES[hash(claim_id) % len(self._STATUSES)]
         filed_date = datetime.utcnow() - timedelta(days=random.randint(1, 14))
-        est_days = status_info["estimated_resolution"]
+        est_days = int(status_info["estimated_resolution"])
 
         result: dict[str, Any] = {
             "success": True,

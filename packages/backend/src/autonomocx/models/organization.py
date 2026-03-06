@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import enum
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, Enum, String, Text
+from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from .workflow import Workflow
 
 
-class PlanType(str, enum.Enum):
+class PlanType(enum.StrEnum):
     STARTER = "starter"
     GROWTH = "growth"
     ENTERPRISE = "enterprise"
@@ -41,46 +41,42 @@ class Organization(TimestampMixin, Base):
         default=PlanType.STARTER,
         nullable=False,
     )
-    settings: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, default=dict)
+    settings: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=dict)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    users: Mapped[List["User"]] = relationship(
-        "User", back_populates="organization", lazy="selectin"
-    )
-    agents: Mapped[List["AgentConfig"]] = relationship(
+    users: Mapped[list[User]] = relationship("User", back_populates="organization", lazy="selectin")
+    agents: Mapped[list[AgentConfig]] = relationship(
         "AgentConfig", back_populates="organization", lazy="selectin"
     )
-    conversations: Mapped[List["Conversation"]] = relationship(
+    conversations: Mapped[list[Conversation]] = relationship(
         "Conversation", back_populates="organization", lazy="noload"
     )
-    tools: Mapped[List["Tool"]] = relationship(
-        "Tool", back_populates="organization", lazy="noload"
-    )
-    action_executions: Mapped[List["ActionExecution"]] = relationship(
+    tools: Mapped[list[Tool]] = relationship("Tool", back_populates="organization", lazy="noload")
+    action_executions: Mapped[list[ActionExecution]] = relationship(
         "ActionExecution", back_populates="organization", lazy="noload"
     )
-    knowledge_bases: Mapped[List["KnowledgeBase"]] = relationship(
+    knowledge_bases: Mapped[list[KnowledgeBase]] = relationship(
         "KnowledgeBase", back_populates="organization", lazy="noload"
     )
-    workflows: Mapped[List["Workflow"]] = relationship(
+    workflows: Mapped[list[Workflow]] = relationship(
         "Workflow", back_populates="organization", lazy="noload"
     )
-    channel_configs: Mapped[List["ChannelConfig"]] = relationship(
+    channel_configs: Mapped[list[ChannelConfig]] = relationship(
         "ChannelConfig", back_populates="organization", lazy="noload"
     )
-    prompt_templates: Mapped[List["PromptTemplate"]] = relationship(
+    prompt_templates: Mapped[list[PromptTemplate]] = relationship(
         "PromptTemplate", back_populates="organization", lazy="noload"
     )
-    audit_logs: Mapped[List["AuditLog"]] = relationship(
+    audit_logs: Mapped[list[AuditLog]] = relationship(
         "AuditLog", back_populates="organization", lazy="noload"
     )
-    metric_snapshots: Mapped[List["MetricSnapshot"]] = relationship(
+    metric_snapshots: Mapped[list[MetricSnapshot]] = relationship(
         "MetricSnapshot", back_populates="organization", lazy="noload"
     )
-    customer_memories: Mapped[List["CustomerMemory"]] = relationship(
+    customer_memories: Mapped[list[CustomerMemory]] = relationship(
         "CustomerMemory", back_populates="organization", lazy="noload"
     )
 

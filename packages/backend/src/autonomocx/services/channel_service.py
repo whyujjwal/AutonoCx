@@ -51,9 +51,7 @@ async def get_channel(
     channel_id: uuid.UUID,
 ) -> ChannelConfig:
     """Return a single channel config.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(ChannelConfig).where(ChannelConfig.id == channel_id)
-    )
+    result = await db.execute(select(ChannelConfig).where(ChannelConfig.id == channel_id))
     ch = result.scalar_one_or_none()
     if ch is None:
         raise NotFoundError(f"Channel {channel_id} not found.")
@@ -75,9 +73,7 @@ async def create_channel(
 
     missing = _validate_channel_config(channel_type, config)
     if missing:
-        raise ValidationError(
-            f"Missing required config for '{channel_type}': {', '.join(missing)}"
-        )
+        raise ValidationError(f"Missing required config for '{channel_type}': {', '.join(missing)}")
 
     ch = ChannelConfig(
         org_id=org_id,

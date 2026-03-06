@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,22 +35,22 @@ class ActionOut(BaseModel):
     id: UUID
     org_id: UUID
     conversation_id: UUID
-    message_id: Optional[UUID] = None
+    message_id: UUID | None = None
     tool_id: UUID
-    agent_id: Optional[UUID] = None
+    agent_id: UUID | None = None
     status: ActionStatus
-    input_params: Optional[dict[str, Any]] = None
-    output_result: Optional[dict[str, Any]] = None
-    error_message: Optional[str] = None
-    risk_score: Optional[Decimal] = None
-    risk_factors: Optional[dict[str, Any]] = None
+    input_params: dict[str, Any] | None = None
+    output_result: dict[str, Any] | None = None
+    error_message: str | None = None
+    risk_score: Decimal | None = None
+    risk_factors: dict[str, Any] | None = None
     requires_approval: bool
-    approved_by: Optional[UUID] = None
-    approved_at: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
-    execution_time_ms: Optional[int] = None
+    approved_by: UUID | None = None
+    approved_at: datetime | None = None
+    rejection_reason: str | None = None
+    execution_time_ms: int | None = None
     retry_count: int
-    idempotency_key: Optional[str] = None
+    idempotency_key: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -59,14 +59,15 @@ class ActionOut(BaseModel):
 
 class ActionDetailOut(ActionOut):
     """Extended action view with related entity names for display."""
-    tool_name: Optional[str] = None
-    agent_name: Optional[str] = None
-    approver_name: Optional[str] = None
-    conversation_customer_name: Optional[str] = None
+
+    tool_name: str | None = None
+    agent_name: str | None = None
+    approver_name: str | None = None
+    conversation_customer_name: str | None = None
 
 
 class ApproveRequest(BaseModel):
-    comment: Optional[str] = Field(None, max_length=1000)
+    comment: str | None = Field(None, max_length=1000)
 
 
 class RejectRequest(BaseModel):
@@ -82,9 +83,9 @@ class ActionStatsOut(BaseModel):
     completed: int
     failed: int
     cancelled: int
-    avg_execution_time_ms: Optional[float] = None
-    approval_rate: Optional[float] = None
-    avg_risk_score: Optional[float] = None
+    avg_execution_time_ms: float | None = None
+    approval_rate: float | None = None
+    avg_risk_score: float | None = None
 
 
 class PaginatedActions(BaseModel):
@@ -112,10 +113,10 @@ class MessageResponse(BaseModel):
 async def list_action_executions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status_filter: Optional[ActionStatus] = Query(None, alias="status"),
-    tool_id: Optional[UUID] = None,
-    agent_id: Optional[UUID] = None,
-    conversation_id: Optional[UUID] = None,
+    status_filter: ActionStatus | None = Query(None, alias="status"),
+    tool_id: UUID | None = None,
+    agent_id: UUID | None = None,
+    conversation_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedActions:
@@ -196,9 +197,7 @@ async def get_action(
     current_user: User = Depends(get_current_user),
 ) -> ActionDetailOut:
     """Return full details of a specific action execution."""
-    action = await get_action_by_id(
-        db, action_id=action_id, org_id=current_user.org_id
-    )
+    action = await get_action_by_id(db, action_id=action_id, org_id=current_user.org_id)
     if action is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -221,7 +220,10 @@ async def approve_action_endpoint(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ActionOut:
-    """Approve a pending action for execution. Requires ADMIN, SUPERVISOR, or AGENT_REVIEWER role."""
+    """Approve a pending action for execution.
+
+    Requires ADMIN, SUPERVISOR, or AGENT_REVIEWER role.
+    """
     action = await approve_action(
         db,
         action_id=action_id,

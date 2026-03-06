@@ -7,12 +7,12 @@ via webhook.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
 from typing import Any
 
 import structlog
 
 from autonomocx.core.config import get_settings
+
 from .base import ChannelAdapter, InboundMessage, OutboundMessage
 
 logger = structlog.get_logger(__name__)
@@ -107,9 +107,7 @@ class SMSAdapter(ChannelAdapter):
 
         # Media attachments (MMS)
         if message.attachments:
-            payload["media_url"] = [
-                att["url"] for att in message.attachments if att.get("url")
-            ]
+            payload["media_url"] = [att["url"] for att in message.attachments if att.get("url")]
 
         return payload
 
@@ -135,11 +133,13 @@ class SMSAdapter(ChannelAdapter):
             media_url = raw_payload.get(f"MediaUrl{i}", "")
             media_type = raw_payload.get(f"MediaContentType{i}", "")
             if media_url:
-                attachments.append({
-                    "url": media_url,
-                    "content_type": media_type,
-                    "index": i,
-                })
+                attachments.append(
+                    {
+                        "url": media_url,
+                        "content_type": media_type,
+                        "index": i,
+                    }
+                )
 
         return InboundMessage(
             channel=self.channel_name,

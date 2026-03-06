@@ -11,12 +11,12 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 
-class MessageDirection(str, Enum):
+class MessageDirection(StrEnum):
     INBOUND = "inbound"
     OUTBOUND = "outbound"
 

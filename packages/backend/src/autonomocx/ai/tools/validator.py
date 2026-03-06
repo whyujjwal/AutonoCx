@@ -115,8 +115,7 @@ class ParameterValidator:
         if expected_type and expected_type in type_map:
             if not isinstance(value, type_map[expected_type]):
                 errors.append(
-                    f"Parameter '{name}' must be {expected_type}, "
-                    f"got {type(value).__name__}"
+                    f"Parameter '{name}' must be {expected_type}, got {type(value).__name__}"
                 )
                 return errors  # Skip further checks if type is wrong
 

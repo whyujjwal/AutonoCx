@@ -5,14 +5,12 @@ from __future__ import annotations
 import csv
 import io
 import uuid
-from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from autonomocx.core.exceptions import NotFoundError
 from autonomocx.models.audit import AuditLog
 from autonomocx.schemas.common import PaginatedResponse
 
@@ -23,16 +21,17 @@ logger = structlog.get_logger(__name__)
 # Write
 # ---------------------------------------------------------------------------
 
+
 async def log_action(
     db: AsyncSession,
     org_id: uuid.UUID,
-    user_id: Optional[uuid.UUID],
+    user_id: uuid.UUID | None,
     actor_type: str,
     action: str,
     resource_type: str,
-    resource_id: Optional[str] = None,
-    details: Optional[dict[str, Any]] = None,
-    request_id: Optional[str] = None,
+    resource_id: str | None = None,
+    details: dict[str, Any] | None = None,
+    request_id: str | None = None,
 ) -> AuditLog:
     """Record a single audit log entry.
 
@@ -66,10 +65,11 @@ async def log_action(
 # Read
 # ---------------------------------------------------------------------------
 
+
 async def query_audit_logs(
     db: AsyncSession,
     org_id: uuid.UUID,
-    filters: Optional[dict[str, Any]] = None,
+    filters: dict[str, Any] | None = None,
     page: int = 1,
     page_size: int = 50,
 ) -> PaginatedResponse:
@@ -95,12 +95,7 @@ async def query_audit_logs(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar_one()
 
-    stmt = (
-        base
-        .order_by(AuditLog.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    stmt = base.order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     rows = (await db.execute(stmt)).scalars().all()
 
     return PaginatedResponse.create(
@@ -115,10 +110,11 @@ async def query_audit_logs(
 # Export
 # ---------------------------------------------------------------------------
 
+
 async def export_audit_logs(
     db: AsyncSession,
     org_id: uuid.UUID,
-    filters: Optional[dict[str, Any]] = None,
+    filters: dict[str, Any] | None = None,
 ) -> bytes:
     """Export matching audit log entries as CSV bytes.
 
@@ -149,22 +145,33 @@ async def export_audit_logs(
     writer = csv.writer(output)
 
     # Header
-    writer.writerow([
-        "id", "timestamp", "actor_type", "user_id", "action",
-        "resource_type", "resource_id", "request_id", "details",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "timestamp",
+            "actor_type",
+            "user_id",
+            "action",
+            "resource_type",
+            "resource_id",
+            "request_id",
+            "details",
+        ]
+    )
 
     for entry in rows:
-        writer.writerow([
-            str(entry.id),
-            entry.created_at.isoformat() if entry.created_at else "",
-            entry.actor_type,
-            str(entry.user_id) if entry.user_id else "",
-            entry.action,
-            entry.resource_type,
-            entry.resource_id or "",
-            entry.request_id or "",
-            str(entry.details) if entry.details else "",
-        ])
+        writer.writerow(
+            [
+                str(entry.id),
+                entry.created_at.isoformat() if entry.created_at else "",
+                entry.actor_type,
+                str(entry.user_id) if entry.user_id else "",
+                entry.action,
+                entry.resource_type,
+                entry.resource_id or "",
+                entry.request_id or "",
+                str(entry.details) if entry.details else "",
+            ]
+        )
 
     return output.getvalue().encode("utf-8")

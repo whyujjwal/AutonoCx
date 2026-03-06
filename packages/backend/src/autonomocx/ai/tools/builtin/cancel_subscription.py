@@ -26,7 +26,9 @@ TOOL_PARAMETERS_SCHEMA: dict[str, Any] = {
         },
         "cancel_at_period_end": {
             "type": "boolean",
-            "description": "If true, subscription remains active until the current billing period ends.",
+            "description": (
+                "If true, subscription remains active until the current billing period ends."
+            ),
         },
         "reason": {
             "type": "string",

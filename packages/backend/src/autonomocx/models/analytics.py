@@ -6,7 +6,7 @@ import enum
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     DateTime,
@@ -31,14 +31,14 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-class MetricPeriod(str, enum.Enum):
+class MetricPeriod(enum.StrEnum):
     HOURLY = "hourly"
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
 
 
-class MemoryType(str, enum.Enum):
+class MemoryType(enum.StrEnum):
     PREFERENCE = "preference"
     FACT = "fact"
     INTERACTION_SUMMARY = "interaction_summary"
@@ -72,14 +72,12 @@ class MetricSnapshot(TimestampMixin, Base):
     )
     period_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     period_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    metrics: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, default=dict, nullable=True
-    )
+    metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=dict, nullable=True)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="metric_snapshots"
     )
 
@@ -101,24 +99,20 @@ class CustomerMemory(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    customer_id: Mapped[str] = mapped_column(
-        String(255), nullable=False, index=True
-    )
+    customer_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     memory_type: Mapped[MemoryType] = mapped_column(
         Enum(MemoryType, name="memory_type", native_enum=False, length=32),
         nullable=False,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    confidence: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(5, 4), nullable=True
-    )
-    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="customer_memories"
     )
 

@@ -5,17 +5,16 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Enums shared with tool models
 # ---------------------------------------------------------------------------
 
 
-class HttpMethod(str, enum.Enum):
+class HttpMethod(enum.StrEnum):
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
@@ -23,7 +22,7 @@ class HttpMethod(str, enum.Enum):
     DELETE = "DELETE"
 
 
-class AuthType(str, enum.Enum):
+class AuthType(enum.StrEnum):
     NONE = "none"
     API_KEY = "api_key"
     BEARER_TOKEN = "bearer_token"
@@ -31,7 +30,7 @@ class AuthType(str, enum.Enum):
     OAUTH2 = "oauth2"
 
 
-class RiskLevel(str, enum.Enum):
+class RiskLevel(enum.StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -46,22 +45,20 @@ class RiskLevel(str, enum.Enum):
 class ToolCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     display_name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
-    parameters_schema: Optional[dict[str, Any]] = Field(
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
+    parameters_schema: dict[str, Any] | None = Field(
         None, description="JSON Schema describing the tool's input parameters"
     )
     endpoint_url: str = Field(..., description="URL the tool calls at execution time")
     http_method: HttpMethod = Field(default=HttpMethod.POST)
-    headers_template: Optional[dict[str, str]] = Field(
+    headers_template: dict[str, str] | None = Field(
         None, description="Header key-value pairs (may contain {{variable}} placeholders)"
     )
     auth_type: AuthType = Field(default=AuthType.NONE)
-    auth_config: Optional[dict[str, Any]] = Field(
-        None, description="Auth-type-specific configuration"
-    )
+    auth_config: dict[str, Any] | None = Field(None, description="Auth-type-specific configuration")
     timeout_seconds: int = Field(default=30, ge=1, le=300)
-    retry_config: Optional[dict[str, Any]] = Field(
+    retry_config: dict[str, Any] | None = Field(
         None,
         description="Retry policy, e.g. {'max_retries': 3, 'backoff_factor': 2}",
     )
@@ -73,20 +70,20 @@ class ToolCreate(BaseModel):
 
 
 class ToolUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    display_name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
-    parameters_schema: Optional[dict[str, Any]] = None
-    endpoint_url: Optional[str] = None
-    http_method: Optional[HttpMethod] = None
-    headers_template: Optional[dict[str, str]] = None
-    auth_type: Optional[AuthType] = None
-    auth_config: Optional[dict[str, Any]] = None
-    timeout_seconds: Optional[int] = Field(None, ge=1, le=300)
-    retry_config: Optional[dict[str, Any]] = None
-    risk_level: Optional[RiskLevel] = None
-    requires_approval: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    display_name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
+    parameters_schema: dict[str, Any] | None = None
+    endpoint_url: str | None = None
+    http_method: HttpMethod | None = None
+    headers_template: dict[str, str] | None = None
+    auth_type: AuthType | None = None
+    auth_config: dict[str, Any] | None = None
+    timeout_seconds: int | None = Field(None, ge=1, le=300)
+    retry_config: dict[str, Any] | None = None
+    risk_level: RiskLevel | None = None
+    requires_approval: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -99,16 +96,16 @@ class ToolResponse(BaseModel):
     org_id: uuid.UUID
     name: str
     display_name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    parameters_schema: Optional[dict[str, Any]] = None
+    description: str | None = None
+    category: str | None = None
+    parameters_schema: dict[str, Any] | None = None
     endpoint_url: str
     http_method: HttpMethod
-    headers_template: Optional[dict[str, str]] = None
+    headers_template: dict[str, str] | None = None
     auth_type: AuthType
-    auth_config: Optional[dict[str, Any]] = None
+    auth_config: dict[str, Any] | None = None
     timeout_seconds: int
-    retry_config: Optional[dict[str, Any]] = None
+    retry_config: dict[str, Any] | None = None
     risk_level: RiskLevel
     requires_approval: bool
     is_active: bool
@@ -132,7 +129,5 @@ class ToolTestRequest(BaseModel):
 
 class ToolTestResponse(BaseModel):
     success: bool
-    result: Optional[Any] = None
-    execution_time_ms: float = Field(
-        ..., description="Wall-clock execution time in milliseconds"
-    )
+    result: Any | None = None
+    execution_time_ms: float = Field(..., description="Wall-clock execution time in milliseconds")

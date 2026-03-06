@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -33,21 +33,21 @@ class WorkflowStepOut(BaseModel):
     id: str
     type: str
     config: dict[str, Any]
-    next_steps: Optional[list[str]] = None
-    condition: Optional[str] = None
+    next_steps: list[str] | None = None
+    condition: str | None = None
 
 
 class WorkflowOut(BaseModel):
     id: UUID
     org_id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: str
-    trigger_config: Optional[dict[str, Any]] = None
+    trigger_config: dict[str, Any] | None = None
     steps: list[WorkflowStepOut] = []
     is_active: bool
     version: int
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
 
@@ -56,23 +56,23 @@ class WorkflowOut(BaseModel):
 
 class WorkflowCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: str = Field(..., max_length=64)
-    trigger_config: Optional[dict[str, Any]] = None
+    trigger_config: dict[str, Any] | None = None
     steps: list[dict[str, Any]] = Field(
         ..., min_length=1, description="Ordered list of workflow steps"
     )
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class WorkflowUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    trigger_type: Optional[str] = Field(None, max_length=64)
-    trigger_config: Optional[dict[str, Any]] = None
-    steps: Optional[list[dict[str, Any]]] = None
-    is_active: Optional[bool] = None
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    trigger_type: str | None = Field(None, max_length=64)
+    trigger_config: dict[str, Any] | None = None
+    steps: list[dict[str, Any]] | None = None
+    is_active: bool | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class PaginatedWorkflows(BaseModel):
@@ -100,7 +100,7 @@ class MessageResponse(BaseModel):
 async def list_org_workflows(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    is_active: Optional[bool] = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedWorkflows:
@@ -132,9 +132,7 @@ async def get_workflow(
     current_user: User = Depends(get_current_user),
 ) -> WorkflowOut:
     """Return a specific workflow configuration."""
-    workflow = await get_workflow_by_id(
-        db, workflow_id=workflow_id, org_id=current_user.org_id
-    )
+    workflow = await get_workflow_by_id(db, workflow_id=workflow_id, org_id=current_user.org_id)
     if workflow is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -208,9 +206,7 @@ async def delete_existing_workflow(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     """Soft-delete a workflow. Requires ADMIN role."""
-    success = await delete_workflow(
-        db, workflow_id=workflow_id, org_id=current_user.org_id
-    )
+    success = await delete_workflow(db, workflow_id=workflow_id, org_id=current_user.org_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

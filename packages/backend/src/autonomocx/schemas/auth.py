@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
 # ---------------------------------------------------------------------------
 # Requests
 # ---------------------------------------------------------------------------
@@ -46,9 +45,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = Field(default="bearer")
-    expires_in: int = Field(
-        ..., description="Access token lifetime in seconds"
-    )
+    expires_in: int = Field(..., description="Access token lifetime in seconds")
 
     model_config = ConfigDict(
         json_schema_extra={

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 import math
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,7 +16,7 @@ T = TypeVar("T")
 # ---------------------------------------------------------------------------
 
 
-class SortOrder(str, enum.Enum):
+class SortOrder(enum.StrEnum):
     ASC = "asc"
     DESC = "desc"
 
@@ -26,7 +26,7 @@ class SortOrder(str, enum.Enum):
 # ---------------------------------------------------------------------------
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     """Envelope for paginated list endpoints."""
 
     items: list[T]
@@ -54,7 +54,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
         total: int,
         page: int,
         page_size: int,
-    ) -> "PaginatedResponse[T]":
+    ) -> PaginatedResponse[T]:
         """Convenience factory that computes ``total_pages`` automatically."""
         return cls(
             items=items,
@@ -74,16 +74,14 @@ class ErrorResponse(BaseModel):
     """Returned on 4xx / 5xx errors."""
 
     detail: str = Field(..., description="Human-readable error message")
-    error_code: Optional[str] = Field(
+    error_code: str | None = Field(
         None, description="Machine-readable error code (e.g. 'INVALID_CREDENTIALS')"
     )
-    request_id: Optional[str] = Field(
-        None, description="Correlation ID for tracing the request"
-    )
+    request_id: str | None = Field(None, description="Correlation ID for tracing the request")
 
 
 class SuccessResponse(BaseModel):
     """Generic success envelope for non-resource responses."""
 
     message: str = Field(..., description="Human-readable success message")
-    data: Optional[Any] = Field(None, description="Optional payload")
+    data: Any | None = Field(None, description="Optional payload")

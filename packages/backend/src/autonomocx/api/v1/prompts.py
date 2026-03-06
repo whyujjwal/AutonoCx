@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -38,10 +38,10 @@ class PromptVersionOut(BaseModel):
     content: str
     variables: list[str] = []
     is_published: bool
-    published_at: Optional[datetime] = None
-    created_by: Optional[UUID] = None
-    change_notes: Optional[str] = None
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    published_at: datetime | None = None
+    created_by: UUID | None = None
+    change_notes: str | None = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -51,42 +51,42 @@ class PromptTemplateOut(BaseModel):
     id: UUID
     org_id: UUID
     name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    current_version: Optional[int] = None
+    description: str | None = None
+    category: str | None = None
+    current_version: int | None = None
     is_active: bool
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
-    active_version: Optional[PromptVersionOut] = None
+    active_version: PromptVersionOut | None = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class PromptTemplateCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
     content: str = Field(..., min_length=1, description="Initial prompt content")
     variables: list[str] = Field(
         default_factory=list,
         description="Template variable names (e.g., ['customer_name', 'issue'])",
     )
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class PromptTemplateUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
-    is_active: Optional[bool] = None
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
+    is_active: bool | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class PromptVersionCreateRequest(BaseModel):
     content: str = Field(..., min_length=1)
     variables: list[str] = Field(default_factory=list)
-    change_notes: Optional[str] = Field(None, max_length=1000)
+    change_notes: str | None = Field(None, max_length=1000)
 
 
 class PaginatedPromptTemplates(BaseModel):
@@ -114,8 +114,8 @@ class MessageResponse(BaseModel):
 async def list_prompts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    category: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    category: str | None = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedPromptTemplates:
@@ -148,9 +148,7 @@ async def get_prompt(
     current_user: User = Depends(get_current_user),
 ) -> PromptTemplateOut:
     """Return a specific prompt template with its active version."""
-    template = await get_prompt_template(
-        db, template_id=template_id, org_id=current_user.org_id
-    )
+    template = await get_prompt_template(db, template_id=template_id, org_id=current_user.org_id)
     if template is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -225,9 +223,7 @@ async def delete_prompt(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     """Soft-delete a prompt template and all its versions. Requires ADMIN role."""
-    success = await delete_prompt_template(
-        db, template_id=template_id, org_id=current_user.org_id
-    )
+    success = await delete_prompt_template(db, template_id=template_id, org_id=current_user.org_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -251,9 +247,7 @@ async def create_version(
 ) -> PromptVersionOut:
     """Create a new draft version for a prompt template. Requires ADMIN or DEVELOPER role."""
     # Verify template exists
-    template = await get_prompt_template(
-        db, template_id=template_id, org_id=current_user.org_id
-    )
+    template = await get_prompt_template(db, template_id=template_id, org_id=current_user.org_id)
     if template is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

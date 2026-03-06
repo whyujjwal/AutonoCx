@@ -50,7 +50,15 @@ TOOL_PARAMETERS_SCHEMA: dict[str, Any] = {
             "maxLength": 2,
         },
     },
-    "required": ["customer_id", "address_type", "street", "city", "state", "postal_code", "country"],
+    "required": [
+        "customer_id",
+        "address_type",
+        "street",
+        "city",
+        "state",
+        "postal_code",
+        "country",
+    ],
 }
 
 
@@ -70,13 +78,16 @@ class UpdateAddressTool:
         await asyncio.sleep(0.2)
 
         formatted_address = ", ".join(
-            filter(None, [
-                params.get("street"),
-                params.get("street2"),
-                params.get("city"),
-                f"{params.get('state', '')} {params.get('postal_code', '')}".strip(),
-                params.get("country"),
-            ])
+            filter(
+                None,
+                [
+                    params.get("street"),
+                    params.get("street2"),
+                    params.get("city"),
+                    f"{params.get('state', '')} {params.get('postal_code', '')}".strip(),
+                    params.get("country"),
+                ],
+            )
         )
 
         return {

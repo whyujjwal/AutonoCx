@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Upload, BookOpen, FileText, Search, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';

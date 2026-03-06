@@ -7,11 +7,11 @@ across conversations, backed by the ``customer_memories`` table.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import datetime
 
 import structlog
-from sqlalchemy import select, and_, or_
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.models.analytics import CustomerMemory, MemoryType
@@ -149,18 +149,15 @@ class LongTermMemory:
         from sqlalchemy import delete as sa_delete
 
         now = datetime.utcnow()
-        stmt = (
-            sa_delete(CustomerMemory)
-            .where(
-                and_(
-                    CustomerMemory.org_id == org_id,
-                    CustomerMemory.expires_at.isnot(None),
-                    CustomerMemory.expires_at <= now,
-                )
+        stmt = sa_delete(CustomerMemory).where(
+            and_(
+                CustomerMemory.org_id == org_id,
+                CustomerMemory.expires_at.isnot(None),
+                CustomerMemory.expires_at <= now,
             )
         )
         result = await db.execute(stmt)
-        count = result.rowcount  # type: ignore[union-attr]
+        count = result.rowcount  # type: ignore[attr-defined]
         if count:
             logger.info("long_term_memory_cleanup", org_id=str(org_id), deleted=count)
         return count

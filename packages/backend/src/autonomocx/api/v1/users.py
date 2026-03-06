@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,7 +34,7 @@ class UserOut(BaseModel):
     full_name: str
     role: UserRole
     is_active: bool
-    last_login_at: Optional[datetime] = None
+    last_login_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -50,9 +49,9 @@ class UserCreateRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = None
+    full_name: str | None = Field(None, min_length=1, max_length=255)
+    email: EmailStr | None = None
+    is_active: bool | None = None
 
 
 class UserRoleUpdateRequest(BaseModel):

@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     redis_socket_connect_timeout: float = 5.0
 
     # ── JWT / Auth ─────────────────────────────────────────────────────
-    jwt_secret_key: SecretStr = Field(
+    jwt_secret_key: SecretStr | None = Field(
         default=None,
         description="Separate secret for JWT signing. Falls back to secret_key if empty.",
     )

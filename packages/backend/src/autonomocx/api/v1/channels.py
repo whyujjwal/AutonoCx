@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -33,13 +33,13 @@ router = APIRouter(prefix="/channels", tags=["channels"])
 class ChannelConfigOut(BaseModel):
     id: UUID
     org_id: UUID
-    agent_id: Optional[UUID] = None
+    agent_id: UUID | None = None
     channel_type: ChannelType
     name: str
-    config: Optional[dict[str, Any]] = None
+    config: dict[str, Any] | None = None
     is_active: bool
-    webhook_url: Optional[str] = None
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    webhook_url: str | None = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
 
@@ -49,19 +49,19 @@ class ChannelConfigOut(BaseModel):
 class ChannelConfigCreateRequest(BaseModel):
     channel_type: ChannelType
     name: str = Field(..., min_length=1, max_length=255)
-    agent_id: Optional[UUID] = None
-    config: Optional[dict[str, Any]] = None
-    webhook_url: Optional[str] = Field(None, max_length=2048)
-    metadata: Optional[dict[str, Any]] = None
+    agent_id: UUID | None = None
+    config: dict[str, Any] | None = None
+    webhook_url: str | None = Field(None, max_length=2048)
+    metadata: dict[str, Any] | None = None
 
 
 class ChannelConfigUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    agent_id: Optional[UUID] = None
-    config: Optional[dict[str, Any]] = None
-    is_active: Optional[bool] = None
-    webhook_url: Optional[str] = Field(None, max_length=2048)
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    agent_id: UUID | None = None
+    config: dict[str, Any] | None = None
+    is_active: bool | None = None
+    webhook_url: str | None = Field(None, max_length=2048)
+    metadata: dict[str, Any] | None = None
 
 
 class ChannelTestRequest(BaseModel):
@@ -75,8 +75,8 @@ class ChannelTestRequest(BaseModel):
 class ChannelTestResponse(BaseModel):
     success: bool
     channel_type: ChannelType
-    response_message: Optional[str] = None
-    error: Optional[str] = None
+    response_message: str | None = None
+    error: str | None = None
     latency_ms: int
 
 
@@ -105,8 +105,8 @@ class MessageResponse(BaseModel):
 async def list_channels(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    channel_type: Optional[ChannelType] = None,
-    is_active: Optional[bool] = None,
+    channel_type: ChannelType | None = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedChannelConfigs:
@@ -139,9 +139,7 @@ async def get_channel(
     current_user: User = Depends(get_current_user),
 ) -> ChannelConfigOut:
     """Return a specific channel configuration."""
-    config = await get_channel_config_by_id(
-        db, config_id=config_id, org_id=current_user.org_id
-    )
+    config = await get_channel_config_by_id(db, config_id=config_id, org_id=current_user.org_id)
     if config is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -215,9 +213,7 @@ async def delete_channel(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     """Soft-delete a channel configuration. Requires ADMIN role."""
-    success = await delete_channel_config(
-        db, config_id=config_id, org_id=current_user.org_id
-    )
+    success = await delete_channel_config(db, config_id=config_id, org_id=current_user.org_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -239,9 +235,7 @@ async def test_channel(
     current_user: User = Depends(get_current_user),
 ) -> ChannelTestResponse:
     """Send a test message through the channel to verify configuration."""
-    config = await get_channel_config_by_id(
-        db, config_id=config_id, org_id=current_user.org_id
-    )
+    config = await get_channel_config_by_id(db, config_id=config_id, org_id=current_user.org_id)
     if config is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

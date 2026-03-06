@@ -6,17 +6,16 @@ Sends messages via SMTP and parses inbound emails from webhook payloads
 
 from __future__ import annotations
 
-import email as email_lib
 import smtplib
 import uuid
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, UTC
 from typing import Any
 
 import structlog
 
 from autonomocx.core.config import get_settings
+
 from .base import ChannelAdapter, InboundMessage, OutboundMessage
 
 logger = structlog.get_logger(__name__)
@@ -55,9 +54,7 @@ class EmailAdapter(ChannelAdapter):
             msg = MIMEMultipart("alternative")
             msg["From"] = settings.smtp_from_email or settings.smtp_username
             msg["To"] = message.recipient_id
-            msg["Subject"] = message.metadata.get(
-                "subject", "Support Update"
-            )
+            msg["Subject"] = message.metadata.get("subject", "Support Update")
             msg["Message-ID"] = f"<{uuid.uuid4().hex}@autonomocx>"
 
             # Attach both plain text and HTML
@@ -101,7 +98,9 @@ class EmailAdapter(ChannelAdapter):
         if not html_body:
             # Wrap plain text in minimal HTML
             escaped = message.content.replace("&", "&amp;").replace("<", "&lt;")
-            html_body = f"<div style='font-family: sans-serif; line-height: 1.5;'><p>{escaped}</p></div>"
+            html_body = (
+                f"<div style='font-family: sans-serif; line-height: 1.5;'><p>{escaped}</p></div>"
+            )
 
         return {
             "to": message.recipient_id,
@@ -136,12 +135,14 @@ class EmailAdapter(ChannelAdapter):
 
         attachments = []
         for att in raw_payload.get("attachments", []):
-            attachments.append({
-                "filename": att.get("filename", "unknown"),
-                "content_type": att.get("content-type", "application/octet-stream"),
-                "size": att.get("size", 0),
-                "url": att.get("url", ""),
-            })
+            attachments.append(
+                {
+                    "filename": att.get("filename", "unknown"),
+                    "content_type": att.get("content-type", "application/octet-stream"),
+                    "size": att.get("size", 0),
+                    "url": att.get("url", ""),
+                }
+            )
 
         return InboundMessage(
             channel=self.channel_name,

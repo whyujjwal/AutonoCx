@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from autonomocx.models.organization import PlanType
-
 
 # ---------------------------------------------------------------------------
 # Organization requests / responses
@@ -17,8 +16,8 @@ from autonomocx.models.organization import PlanType
 
 
 class OrgUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    settings: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    settings: dict[str, Any] | None = None
 
 
 class OrgResponse(BaseModel):
@@ -26,7 +25,7 @@ class OrgResponse(BaseModel):
     name: str
     slug: str
     plan: PlanType
-    settings: Optional[dict[str, Any]] = None
+    settings: dict[str, Any] | None = None
     is_active: bool
     created_at: datetime
 
@@ -44,20 +43,18 @@ class ApiKeyCreate(BaseModel):
         default_factory=list,
         description="List of permission scopes (e.g. ['conversations:read', 'agents:write'])",
     )
-    expires_at: Optional[datetime] = Field(
+    expires_at: datetime | None = Field(
         None, description="Optional expiration timestamp; null means never expires"
     )
 
 
 class ApiKeyResponse(BaseModel):
     id: uuid.UUID
-    key_prefix: str = Field(
-        ..., description="First 8 characters of the key for identification"
-    )
+    key_prefix: str = Field(..., description="First 8 characters of the key for identification")
     name: str
     scopes: list[str]
-    expires_at: Optional[datetime] = None
-    last_used_at: Optional[datetime] = None
+    expires_at: datetime | None = None
+    last_used_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -66,6 +63,4 @@ class ApiKeyResponse(BaseModel):
 class ApiKeyCreatedResponse(ApiKeyResponse):
     """Returned once on creation -- the only time the raw key is visible."""
 
-    raw_key: str = Field(
-        ..., description="Full API key; shown only at creation time"
-    )
+    raw_key: str = Field(..., description="Full API key; shown only at creation time")

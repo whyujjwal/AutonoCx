@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -34,16 +34,16 @@ class AgentOut(BaseModel):
     id: UUID
     org_id: UUID
     name: str
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = None
-    llm_model: Optional[str] = None
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    tools_enabled: Optional[list[UUID]] = None
-    fallback_agent_id: Optional[UUID] = None
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
+    tools_enabled: list[UUID] | None = None
+    fallback_agent_id: UUID | None = None
     is_active: bool
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
 
@@ -52,34 +52,34 @@ class AgentOut(BaseModel):
 
 class AgentCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = Field(None, max_length=64)
-    llm_model: Optional[str] = Field(None, max_length=128)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1, le=128000)
-    tools_enabled: Optional[list[UUID]] = None
-    fallback_agent_id: Optional[UUID] = None
-    metadata: Optional[dict[str, Any]] = None
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = Field(None, max_length=64)
+    llm_model: str | None = Field(None, max_length=128)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1, le=128000)
+    tools_enabled: list[UUID] | None = None
+    fallback_agent_id: UUID | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class AgentUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    system_prompt: Optional[str] = None
-    llm_provider: Optional[str] = Field(None, max_length=64)
-    llm_model: Optional[str] = Field(None, max_length=128)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1, le=128000)
-    tools_enabled: Optional[list[UUID]] = None
-    fallback_agent_id: Optional[UUID] = None
-    is_active: Optional[bool] = None
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    system_prompt: str | None = None
+    llm_provider: str | None = Field(None, max_length=64)
+    llm_model: str | None = Field(None, max_length=128)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1, le=128000)
+    tools_enabled: list[UUID] | None = None
+    fallback_agent_id: UUID | None = None
+    is_active: bool | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class AgentTestRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4096)
-    context: Optional[dict[str, Any]] = None
+    context: dict[str, Any] | None = None
 
 
 class AgentTestResponse(BaseModel):
@@ -95,15 +95,15 @@ class AgentMetricsOut(BaseModel):
     agent_id: UUID
     total_conversations: int
     active_conversations: int
-    avg_resolution_time_seconds: Optional[float] = None
-    avg_satisfaction_score: Optional[float] = None
+    avg_resolution_time_seconds: float | None = None
+    avg_satisfaction_score: float | None = None
     total_messages: int
     total_actions: int
     escalation_rate: float
-    avg_latency_ms: Optional[float] = None
-    total_cost_usd: Optional[float] = None
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
+    avg_latency_ms: float | None = None
+    total_cost_usd: float | None = None
+    period_start: datetime | None = None
+    period_end: datetime | None = None
 
 
 class PaginatedAgents(BaseModel):
@@ -131,7 +131,7 @@ class MessageResponse(BaseModel):
 async def list_agent_configs(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    is_active: Optional[bool] = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedAgents:
@@ -163,9 +163,7 @@ async def get_agent(
     current_user: User = Depends(get_current_user),
 ) -> AgentOut:
     """Return a specific agent configuration."""
-    agent = await get_agent_by_id(
-        db, agent_id=agent_id, org_id=current_user.org_id
-    )
+    agent = await get_agent_by_id(db, agent_id=agent_id, org_id=current_user.org_id)
     if agent is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -243,9 +241,7 @@ async def delete_agent_config(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     """Soft-delete an agent configuration. Requires ADMIN role."""
-    success = await delete_agent(
-        db, agent_id=agent_id, org_id=current_user.org_id
-    )
+    success = await delete_agent(db, agent_id=agent_id, org_id=current_user.org_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -269,9 +265,7 @@ async def test_agent_endpoint(
     """Send a test message through the agent pipeline and return the response
     without persisting any data.
     """
-    agent = await get_agent_by_id(
-        db, agent_id=agent_id, org_id=current_user.org_id
-    )
+    agent = await get_agent_by_id(db, agent_id=agent_id, org_id=current_user.org_id)
     if agent is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -298,9 +292,7 @@ async def get_metrics(
     current_user: User = Depends(get_current_user),
 ) -> AgentMetricsOut:
     """Return aggregated performance metrics for a specific agent."""
-    agent = await get_agent_by_id(
-        db, agent_id=agent_id, org_id=current_user.org_id
-    )
+    agent = await get_agent_by_id(db, agent_id=agent_id, org_id=current_user.org_id)
     if agent is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

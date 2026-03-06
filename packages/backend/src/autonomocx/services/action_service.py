@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select
@@ -21,10 +21,11 @@ logger = structlog.get_logger(__name__)
 # List / Read
 # ---------------------------------------------------------------------------
 
+
 async def list_actions(
     db: AsyncSession,
     org_id: uuid.UUID,
-    filters: Optional[dict[str, Any]] = None,
+    filters: dict[str, Any] | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> PaginatedResponse:
@@ -39,9 +40,7 @@ async def list_actions(
     if "agent_id" in filters and filters["agent_id"]:
         base = base.where(ActionExecution.agent_id == filters["agent_id"])
     if "conversation_id" in filters and filters["conversation_id"]:
-        base = base.where(
-            ActionExecution.conversation_id == filters["conversation_id"]
-        )
+        base = base.where(ActionExecution.conversation_id == filters["conversation_id"])
     if "date_from" in filters and filters["date_from"]:
         base = base.where(ActionExecution.created_at >= filters["date_from"])
     if "date_to" in filters and filters["date_to"]:
@@ -51,8 +50,7 @@ async def list_actions(
     total = (await db.execute(count_stmt)).scalar_one()
 
     stmt = (
-        base
-        .order_by(ActionExecution.created_at.desc())
+        base.order_by(ActionExecution.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -88,9 +86,7 @@ async def get_action(
     action_id: uuid.UUID,
 ) -> ActionExecution:
     """Return a single action execution.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(ActionExecution).where(ActionExecution.id == action_id)
-    )
+    result = await db.execute(select(ActionExecution).where(ActionExecution.id == action_id))
     action = result.scalar_one_or_none()
     if action is None:
         raise NotFoundError(f"Action execution {action_id} not found.")
@@ -101,11 +97,12 @@ async def get_action(
 # Approve / Reject
 # ---------------------------------------------------------------------------
 
+
 async def approve_action(
     db: AsyncSession,
     action_id: uuid.UUID,
     user_id: uuid.UUID,
-    notes: Optional[str] = None,
+    notes: str | None = None,
 ) -> ActionExecution:
     """Approve a pending action and transition it to ``APPROVED``.
 
@@ -115,9 +112,7 @@ async def approve_action(
     action = await get_action(db, action_id)
 
     if action.status != ActionStatus.AWAITING_APPROVAL:
-        raise ValidationError(
-            f"Action is in '{action.status.value}' state and cannot be approved."
-        )
+        raise ValidationError(f"Action is in '{action.status.value}' state and cannot be approved.")
 
     action.status = ActionStatus.APPROVED
     action.approved_by = user_id
@@ -144,15 +139,13 @@ async def reject_action(
     db: AsyncSession,
     action_id: uuid.UUID,
     user_id: uuid.UUID,
-    reason: Optional[str] = None,
+    reason: str | None = None,
 ) -> ActionExecution:
     """Reject a pending action."""
     action = await get_action(db, action_id)
 
     if action.status != ActionStatus.AWAITING_APPROVAL:
-        raise ValidationError(
-            f"Action is in '{action.status.value}' state and cannot be rejected."
-        )
+        raise ValidationError(f"Action is in '{action.status.value}' state and cannot be rejected.")
 
     action.status = ActionStatus.REJECTED
     action.approved_by = user_id
@@ -175,6 +168,7 @@ async def reject_action(
 # Stats
 # ---------------------------------------------------------------------------
 
+
 async def get_action_stats(
     db: AsyncSession,
     org_id: uuid.UUID,
@@ -184,7 +178,7 @@ async def get_action_stats(
     Returns an ``ActionStats``-compatible dict with counts by status,
     average execution time, and approval metrics.
     """
-    base = select(ActionExecution).where(ActionExecution.org_id == org_id)
+    select(ActionExecution).where(ActionExecution.org_id == org_id)
 
     # Status counts
     status_stmt = (
@@ -196,15 +190,12 @@ async def get_action_stats(
         .group_by(ActionExecution.status)
     )
     status_result = await db.execute(status_stmt)
-    status_counts = {row.status.value: row.count for row in status_result}
+    status_counts: dict[str, int] = {row[0].value: row[1] for row in status_result}
 
     # Average execution time for completed actions
-    avg_exec_stmt = (
-        select(func.avg(ActionExecution.execution_time_ms))
-        .where(
-            ActionExecution.org_id == org_id,
-            ActionExecution.status == ActionStatus.COMPLETED,
-        )
+    avg_exec_stmt = select(func.avg(ActionExecution.execution_time_ms)).where(
+        ActionExecution.org_id == org_id,
+        ActionExecution.status == ActionStatus.COMPLETED,
     )
     avg_exec = (await db.execute(avg_exec_stmt)).scalar_one() or 0
 

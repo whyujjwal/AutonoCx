@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
@@ -28,41 +28,39 @@ class AgentConfig(TimestampMixin, Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    system_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    llm_provider: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    llm_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    temperature: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    max_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    tools_enabled: Mapped[Optional[list[uuid.UUID]]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    system_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    llm_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    temperature: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tools_enabled: Mapped[list[uuid.UUID] | None] = mapped_column(
         ARRAY(UUID(as_uuid=True)), default=list, nullable=True
     )
-    fallback_agent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    fallback_agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("agents.id", ondelete="SET NULL"),
         nullable=True,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    metadata_: Mapped[Optional[dict[str, Any]]] = mapped_column(
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB, default=dict, nullable=True
     )
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
-        "Organization", back_populates="agents"
-    )
-    fallback_agent: Mapped[Optional["AgentConfig"]] = relationship(
+    organization: Mapped[Organization] = relationship("Organization", back_populates="agents")
+    fallback_agent: Mapped[AgentConfig | None] = relationship(
         "AgentConfig", remote_side="AgentConfig.id", lazy="selectin"
     )
-    conversations: Mapped[List["Conversation"]] = relationship(
+    conversations: Mapped[list[Conversation]] = relationship(
         "Conversation", back_populates="agent", lazy="noload"
     )
-    action_executions: Mapped[List["ActionExecution"]] = relationship(
+    action_executions: Mapped[list[ActionExecution]] = relationship(
         "ActionExecution", back_populates="agent", lazy="noload"
     )
-    channel_configs: Mapped[List["ChannelConfig"]] = relationship(
+    channel_configs: Mapped[list[ChannelConfig]] = relationship(
         "ChannelConfig", back_populates="agent", lazy="noload"
     )
 

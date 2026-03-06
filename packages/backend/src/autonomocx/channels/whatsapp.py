@@ -7,13 +7,13 @@ incoming messages through the configured webhook endpoint.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
 from typing import Any
 
 import httpx
 import structlog
 
 from autonomocx.core.config import get_settings
+
 from .base import ChannelAdapter, InboundMessage, OutboundMessage
 
 logger = structlog.get_logger(__name__)
@@ -37,7 +37,14 @@ class WhatsAppAdapter(ChannelAdapter):
                 base_url=WHATSAPP_API_BASE,
                 timeout=30.0,
                 headers={
-                    "Authorization": f"Bearer {self._settings.twilio_auth_token.get_secret_value() if self._settings.twilio_auth_token else ''}",
+                    "Authorization": (
+                        "Bearer "
+                        + (
+                            self._settings.twilio_auth_token.get_secret_value()
+                            if self._settings.twilio_auth_token
+                            else ""
+                        )
+                    ),
                     "Content-Type": "application/json",
                 },
             )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -11,13 +11,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.core.database import get_db
-from autonomocx.core.dependencies import get_current_user, require_role
+from autonomocx.core.dependencies import get_current_user
 from autonomocx.models.conversation import (
     ChannelType,
     ConversationStatus,
     Priority,
 )
-from autonomocx.models.user import User, UserRole
+from autonomocx.models.user import User
 from autonomocx.services.conversations import (
     create_conversation,
     escalate_conversation,
@@ -38,15 +38,15 @@ class MessageOut(BaseModel):
     id: UUID
     conversation_id: UUID
     role: str
-    content: Optional[str] = None
+    content: str | None = None
     content_type: str
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
-    tool_call_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    llm_model_used: Optional[str] = None
-    latency_ms: Optional[int] = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    llm_model_used: str | None = None
+    latency_ms: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -55,24 +55,24 @@ class MessageOut(BaseModel):
 class ConversationOut(BaseModel):
     id: UUID
     org_id: UUID
-    agent_id: Optional[UUID] = None
+    agent_id: UUID | None = None
     channel: ChannelType
-    channel_id: Optional[str] = None
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
+    channel_id: str | None = None
+    customer_id: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
+    customer_phone: str | None = None
     status: ConversationStatus
     priority: Priority
-    sentiment: Optional[float] = None
-    intent: Optional[str] = None
-    assigned_to: Optional[UUID] = None
-    resolved_by: Optional[str] = None
-    resolution_time_seconds: Optional[int] = None
-    satisfaction_score: Optional[float] = None
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    sentiment: float | None = None
+    intent: str | None = None
+    assigned_to: UUID | None = None
+    resolved_by: str | None = None
+    resolution_time_seconds: int | None = None
+    satisfaction_score: float | None = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -85,32 +85,32 @@ class ConversationDetailOut(ConversationOut):
 
 class ConversationCreateRequest(BaseModel):
     channel: ChannelType
-    channel_id: Optional[str] = None
-    agent_id: Optional[UUID] = None
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
+    channel_id: str | None = None
+    agent_id: UUID | None = None
+    customer_id: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
+    customer_phone: str | None = None
     priority: Priority = Priority.NORMAL
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class ConversationUpdateRequest(BaseModel):
-    status: Optional[ConversationStatus] = None
-    priority: Optional[Priority] = None
-    agent_id: Optional[UUID] = None
-    assigned_to: Optional[UUID] = None
-    metadata: Optional[dict[str, Any]] = None
+    status: ConversationStatus | None = None
+    priority: Priority | None = None
+    agent_id: UUID | None = None
+    assigned_to: UUID | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class EscalateRequest(BaseModel):
     reason: str = Field(..., min_length=1, max_length=1000)
-    assign_to: Optional[UUID] = None
+    assign_to: UUID | None = None
 
 
 class ResolveRequest(BaseModel):
     resolved_by: str = Field(..., min_length=1, max_length=255)
-    satisfaction_score: Optional[float] = Field(None, ge=0.0, le=5.0)
+    satisfaction_score: float | None = Field(None, ge=0.0, le=5.0)
 
 
 class PaginatedConversations(BaseModel):
@@ -138,12 +138,12 @@ class MessageResponse(BaseModel):
 async def list_convos(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status_filter: Optional[ConversationStatus] = Query(None, alias="status"),
-    channel: Optional[ChannelType] = None,
-    priority: Optional[Priority] = None,
-    agent_id: Optional[UUID] = None,
-    assigned_to: Optional[UUID] = None,
-    customer_id: Optional[str] = None,
+    status_filter: ConversationStatus | None = Query(None, alias="status"),
+    channel: ChannelType | None = None,
+    priority: Priority | None = None,
+    agent_id: UUID | None = None,
+    assigned_to: UUID | None = None,
+    customer_id: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedConversations:

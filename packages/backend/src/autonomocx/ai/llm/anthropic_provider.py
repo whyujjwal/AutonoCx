@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import structlog
-from anthropic import AsyncAnthropic, APIError, APITimeoutError, RateLimitError
+from anthropic import APIError, APITimeoutError, AsyncAnthropic, RateLimitError
 
 from autonomocx.core.config import get_settings
 from autonomocx.core.exceptions import ExternalServiceError
@@ -33,7 +34,8 @@ class AnthropicProvider(BaseLLMProvider):
     def __init__(self, api_key: str | None = None) -> None:
         settings = get_settings()
         self._client = AsyncAnthropic(
-            api_key=api_key or (
+            api_key=api_key
+            or (
                 settings.anthropic_api_key.get_secret_value()
                 if settings.anthropic_api_key
                 else None
@@ -149,39 +151,47 @@ class AnthropicProvider(BaseLLMProvider):
                 system_content += msg.get("content", "") + "\n"
             elif msg.get("role") == "tool":
                 # Convert OpenAI tool result format to Anthropic format
-                non_system_messages.append({
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": msg.get("tool_call_id", ""),
-                            "content": msg.get("content", ""),
-                        }
-                    ],
-                })
+                non_system_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": msg.get("tool_call_id", ""),
+                                "content": msg.get("content", ""),
+                            }
+                        ],
+                    }
+                )
             elif msg.get("role") == "assistant" and msg.get("tool_calls"):
                 # Convert assistant message with tool_calls to Anthropic format
                 content_blocks: list[dict[str, Any]] = []
                 if msg.get("content"):
                     content_blocks.append({"type": "text", "text": msg["content"]})
                 for tc in msg["tool_calls"]:
-                    content_blocks.append({
-                        "type": "tool_use",
-                        "id": tc["id"],
-                        "name": tc["function"]["name"],
-                        "input": json.loads(tc["function"]["arguments"])
-                        if isinstance(tc["function"]["arguments"], str)
-                        else tc["function"]["arguments"],
-                    })
-                non_system_messages.append({
-                    "role": "assistant",
-                    "content": content_blocks,
-                })
+                    content_blocks.append(
+                        {
+                            "type": "tool_use",
+                            "id": tc["id"],
+                            "name": tc["function"]["name"],
+                            "input": json.loads(tc["function"]["arguments"])
+                            if isinstance(tc["function"]["arguments"], str)
+                            else tc["function"]["arguments"],
+                        }
+                    )
+                non_system_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": content_blocks,
+                    }
+                )
             else:
-                non_system_messages.append({
-                    "role": msg.get("role", "user"),
-                    "content": msg.get("content", ""),
-                })
+                non_system_messages.append(
+                    {
+                        "role": msg.get("role", "user"),
+                        "content": msg.get("content", ""),
+                    }
+                )
 
         kwargs: dict[str, Any] = {
             "model": model,
@@ -205,9 +215,11 @@ class AnthropicProvider(BaseLLMProvider):
         anthropic_tools: list[dict[str, Any]] = []
         for tool in openai_tools:
             func = tool.get("function", tool)
-            anthropic_tools.append({
-                "name": func["name"],
-                "description": func.get("description", ""),
-                "input_schema": func.get("parameters", {"type": "object", "properties": {}}),
-            })
+            anthropic_tools.append(
+                {
+                    "name": func["name"],
+                    "description": func.get("description", ""),
+                    "input_schema": func.get("parameters", {"type": "object", "properties": {}}),
+                }
+            )
         return anthropic_tools

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import Callable
 from typing import Annotated, Any
 
 import structlog
-from fastapi import Depends, Request
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 
 
 # ── Token resolution ───────────────────────────────────────────────────
+
 
 async def _resolve_token(
     credentials: Annotated[
@@ -51,6 +52,7 @@ async def _resolve_token(
 
 
 # ── Public dependencies ────────────────────────────────────────────────
+
 
 async def get_current_user(
     token: Annotated[TokenPayload, Depends(_resolve_token)],
@@ -103,6 +105,47 @@ def require_role(*allowed_roles: str) -> Callable[..., Any]:
         return current_user
 
     return _check_role
+
+
+# ── WebSocket auth ────────────────────────────────────────────────────
+
+
+async def get_current_user_ws(
+    token: str,
+    db: AsyncSession,
+) -> Any:
+    """Authenticate a WebSocket connection using a raw JWT token string.
+
+    Unlike HTTP dependencies the token is passed explicitly (from a query
+    parameter) rather than via the ``Authorization`` header.  Returns the
+    ``User`` ORM object so the caller has access to ``org_id``, ``full_name``,
+    etc.
+    """
+    from sqlalchemy import select
+
+    from autonomocx.models.user import User
+
+    try:
+        payload = decode_token(token)
+    except JWTError as exc:
+        logger.warning("ws_jwt_decode_failed", error=str(exc))
+        raise AuthenticationError("Invalid or expired token.") from exc
+
+    if payload.token_type != "access":
+        raise AuthenticationError("Invalid token type. Expected an access token.")
+
+    if not payload.sub:
+        raise AuthenticationError("Token is missing a subject claim.")
+
+    result = await db.execute(
+        select(User).where(User.id == payload.sub)
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise AuthenticationError("User not found.")
+    if not user.is_active:
+        raise AuthenticationError("User account is disabled.")
+    return user
 
 
 # ── Convenience type aliases ───────────────────────────────────────────

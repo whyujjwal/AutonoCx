@@ -68,6 +68,7 @@ class ProcessRefundTool:
             "estimated_arrival": "3-5 business days",
             "message": (
                 f"Refund of ${refund_amount:.2f} has been processed for order {order_id}. "
-                f"The amount will be returned to the original payment method within 3-5 business days."
+                "The amount will be returned to the original payment"
+                " method within 3-5 business days."
             ),
         }

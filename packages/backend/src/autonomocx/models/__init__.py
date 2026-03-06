@@ -4,12 +4,17 @@ Importing this package ensures every model is registered with the shared
 ``Base.metadata`` so that Alembic's ``--autogenerate`` can discover them.
 """
 
-from .base import Base, TimestampMixin
-
-# Domain models ---------------------------------------------------------
-from .organization import Organization, PlanType
-from .user import User, UserRole
+from .action import ActionExecution, ActionStatus
 from .agent import AgentConfig
+from .analytics import (
+    CustomerMemory,
+    MemoryType,
+    MetricPeriod,
+    MetricSnapshot,
+)
+from .audit import ActorType, AuditLog
+from .base import Base, TimestampMixin
+from .channel import ChannelConfig
 from .conversation import (
     ChannelType,
     ContentType,
@@ -19,19 +24,14 @@ from .conversation import (
     MessageRole,
     Priority,
 )
-from .tool import RiskLevel, Tool
-from .action import ActionExecution, ActionStatus
 from .knowledge import Document, DocumentChunk, DocumentStatus, KnowledgeBase
-from .workflow import StepType, TriggerType, Workflow, WorkflowStep
-from .channel import ChannelConfig
+
+# Domain models ---------------------------------------------------------
+from .organization import Organization, PlanType
 from .prompt import PromptCategory, PromptTemplate, PromptVersion
-from .audit import ActorType, AuditLog
-from .analytics import (
-    CustomerMemory,
-    MemoryType,
-    MetricPeriod,
-    MetricSnapshot,
-)
+from .tool import RiskLevel, Tool
+from .user import User, UserRole
+from .workflow import StepType, TriggerType, Workflow, WorkflowStep
 
 __all__ = [
     # Base

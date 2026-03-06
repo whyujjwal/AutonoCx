@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import structlog
-from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
+from openai import APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 
 from autonomocx.core.config import get_settings
 from autonomocx.core.exceptions import ExternalServiceError
@@ -35,9 +36,8 @@ class OpenAIProvider(BaseLLMProvider):
     def __init__(self, api_key: str | None = None, org_id: str | None = None) -> None:
         settings = get_settings()
         self._client = AsyncOpenAI(
-            api_key=api_key or (
-                settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
-            ),
+            api_key=api_key
+            or (settings.openai_api_key.get_secret_value() if settings.openai_api_key else None),
             organization=org_id or settings.openai_org_id,
             timeout=settings.openai_timeout,
             max_retries=settings.openai_max_retries,
@@ -68,7 +68,12 @@ class OpenAIProvider(BaseLLMProvider):
                 error_code="LLM_TIMEOUT",
             ) from exc
         except APIError as exc:
-            logger.error("openai_api_error", model=model, status=exc.status_code, detail=str(exc))
+            logger.error(
+                "openai_api_error",
+                model=model,
+                status=getattr(exc, "status_code", None),
+                detail=str(exc),
+            )
             raise ExternalServiceError(
                 f"OpenAI API error: {exc.message}",
                 error_code="LLM_API_ERROR",

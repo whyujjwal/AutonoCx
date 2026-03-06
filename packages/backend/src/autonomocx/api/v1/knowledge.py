@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -16,8 +16,8 @@ from autonomocx.models.user import User, UserRole
 from autonomocx.services.knowledge import (
     create_knowledge_base,
     delete_document,
-    get_knowledge_base,
     get_kb_documents,
+    get_knowledge_base,
     list_knowledge_bases,
     search_knowledge,
     update_knowledge_base,
@@ -35,14 +35,14 @@ class KnowledgeBaseOut(BaseModel):
     id: UUID
     org_id: UUID
     name: str
-    description: Optional[str] = None
-    embedding_model: Optional[str] = None
+    description: str | None = None
+    embedding_model: str | None = None
     chunk_size: int
     chunk_overlap: int
     document_count: int
     total_chunks: int
     is_active: bool
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
 
@@ -51,33 +51,33 @@ class KnowledgeBaseOut(BaseModel):
 
 class KnowledgeBaseCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    embedding_model: Optional[str] = Field(None, max_length=128)
+    description: str | None = None
+    embedding_model: str | None = Field(None, max_length=128)
     chunk_size: int = Field(512, ge=64, le=4096)
     chunk_overlap: int = Field(64, ge=0, le=512)
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class KnowledgeBaseUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    embedding_model: Optional[str] = Field(None, max_length=128)
-    chunk_size: Optional[int] = Field(None, ge=64, le=4096)
-    chunk_overlap: Optional[int] = Field(None, ge=0, le=512)
-    is_active: Optional[bool] = None
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    embedding_model: str | None = Field(None, max_length=128)
+    chunk_size: int | None = Field(None, ge=64, le=4096)
+    chunk_overlap: int | None = Field(None, ge=0, le=512)
+    is_active: bool | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class DocumentOut(BaseModel):
     id: UUID
     knowledge_base_id: UUID
     filename: str
-    content_type: Optional[str] = None
+    content_type: str | None = None
     file_size_bytes: int
     chunk_count: int
     status: str
-    error_message: Optional[str] = None
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
+    error_message: str | None = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
     created_at: datetime
     updated_at: datetime
 
@@ -86,7 +86,7 @@ class DocumentOut(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
-    knowledge_base_ids: Optional[list[UUID]] = Field(
+    knowledge_base_ids: list[UUID] | None = Field(
         None, description="Filter to specific KBs (null = search all)"
     )
     top_k: int = Field(5, ge=1, le=50)
@@ -100,7 +100,7 @@ class SearchResultItem(BaseModel):
     content: str
     similarity_score: float
     document_filename: str
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class SearchResponse(BaseModel):
@@ -142,7 +142,7 @@ class MessageResponse(BaseModel):
 async def list_kbs(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    is_active: Optional[bool] = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedKnowledgeBases:
@@ -200,9 +200,7 @@ async def get_kb(
     current_user: User = Depends(get_current_user),
 ) -> KnowledgeBaseOut:
     """Return a specific knowledge base."""
-    kb = await get_knowledge_base(
-        db, kb_id=kb_id, org_id=current_user.org_id
-    )
+    kb = await get_knowledge_base(db, kb_id=kb_id, org_id=current_user.org_id)
     if kb is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -252,9 +250,7 @@ async def list_documents(
 ) -> PaginatedDocuments:
     """Return paginated documents within a knowledge base."""
     # Verify KB exists and belongs to org
-    kb = await get_knowledge_base(
-        db, kb_id=kb_id, org_id=current_user.org_id
-    )
+    kb = await get_knowledge_base(db, kb_id=kb_id, org_id=current_user.org_id)
     if kb is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -294,9 +290,7 @@ async def upload_doc(
     The document will be chunked and embedded asynchronously.
     """
     # Verify KB exists and belongs to org
-    kb = await get_knowledge_base(
-        db, kb_id=kb_id, org_id=current_user.org_id
-    )
+    kb = await get_knowledge_base(db, kb_id=kb_id, org_id=current_user.org_id)
     if kb is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

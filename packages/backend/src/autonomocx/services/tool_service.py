@@ -20,11 +20,7 @@ async def list_tools(
     org_id: uuid.UUID,
 ) -> list[Tool]:
     """Return all tools belonging to *org_id*, ordered by name."""
-    stmt = (
-        select(Tool)
-        .where(Tool.org_id == org_id)
-        .order_by(Tool.name)
-    )
+    stmt = select(Tool).where(Tool.org_id == org_id).order_by(Tool.name)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -102,10 +98,20 @@ async def update_tool(
         raise ValidationError("Built-in tools cannot be modified.")
 
     updatable = (
-        "display_name", "description", "category", "parameters_schema",
-        "endpoint_url", "http_method", "headers_template", "auth_type",
-        "auth_config", "timeout_seconds", "retry_config", "risk_level",
-        "requires_approval", "is_active",
+        "display_name",
+        "description",
+        "category",
+        "parameters_schema",
+        "endpoint_url",
+        "http_method",
+        "headers_template",
+        "auth_type",
+        "auth_config",
+        "timeout_seconds",
+        "retry_config",
+        "risk_level",
+        "requires_approval",
+        "is_active",
     )
     for field in updatable:
         if field in data:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from .prompt import PromptVersion
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     ADMIN = "admin"
     SUPERVISOR = "supervisor"
     AGENT_REVIEWER = "agent_reviewer"
@@ -38,9 +38,7 @@ class User(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    email: Mapped[str] = mapped_column(
-        String(320), unique=True, nullable=False, index=True
-    )
+    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
@@ -49,30 +47,28 @@ class User(TimestampMixin, Base):
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
-        "Organization", back_populates="users"
-    )
-    assigned_conversations: Mapped[List["Conversation"]] = relationship(
+    organization: Mapped[Organization] = relationship("Organization", back_populates="users")
+    assigned_conversations: Mapped[list[Conversation]] = relationship(
         "Conversation",
         back_populates="assigned_user",
         foreign_keys="Conversation.assigned_to",
         lazy="noload",
     )
-    approved_actions: Mapped[List["ActionExecution"]] = relationship(
+    approved_actions: Mapped[list[ActionExecution]] = relationship(
         "ActionExecution",
         back_populates="approver",
         foreign_keys="ActionExecution.approved_by",
         lazy="noload",
     )
-    audit_logs: Mapped[List["AuditLog"]] = relationship(
+    audit_logs: Mapped[list[AuditLog]] = relationship(
         "AuditLog", back_populates="user", lazy="noload"
     )
-    prompt_versions: Mapped[List["PromptVersion"]] = relationship(
+    prompt_versions: Mapped[list[PromptVersion]] = relationship(
         "PromptVersion", back_populates="creator", lazy="noload"
     )
 

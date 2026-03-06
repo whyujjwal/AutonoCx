@@ -7,8 +7,8 @@ Start the server in development with::
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
@@ -21,7 +21,6 @@ from autonomocx.core.logging import setup_logging
 from autonomocx.core.redis import redis_manager
 from autonomocx.middleware.cors import setup_cors
 from autonomocx.middleware.org_context import OrgContextMiddleware
-from autonomocx.middleware.pii_filter import pii_masking_processor
 from autonomocx.middleware.rate_limit import RateLimitMiddleware
 from autonomocx.middleware.request_id import RequestIdMiddleware
 
@@ -30,8 +29,9 @@ logger = structlog.get_logger(__name__)
 
 # ── Lifespan ───────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Manage startup / shutdown resources.
 
     * **Startup**: initialise the database engine, connect to Redis, and
@@ -64,6 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 # ── App factory ────────────────────────────────────────────────────────
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build and return the fully-configured FastAPI application."""
@@ -119,7 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redis_ok = False
         try:
             if redis_manager.is_connected:
-                await redis_manager.client.ping()
+                await redis_manager.client.ping()  # type: ignore[misc]
                 redis_ok = True
         except Exception:
             pass

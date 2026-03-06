@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -16,7 +16,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-class PromptCategory(str, enum.Enum):
+class PromptCategory(enum.StrEnum):
     SYSTEM = "system"
     INTENT = "intent"
     TOOL = "tool"
@@ -58,9 +58,9 @@ class PromptTemplate(TimestampMixin, Base):
         Enum(PromptCategory, name="prompt_category", native_enum=False, length=16),
         nullable=False,
     )
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    active_version_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    active_version_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("prompt_versions.id", ondelete="SET NULL", use_alter=True),
         nullable=True,
@@ -69,17 +69,17 @@ class PromptTemplate(TimestampMixin, Base):
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="prompt_templates"
     )
-    versions: Mapped[List["PromptVersion"]] = relationship(
+    versions: Mapped[list[PromptVersion]] = relationship(
         "PromptVersion",
         back_populates="template",
         foreign_keys="PromptVersion.template_id",
         order_by="PromptVersion.version_number",
         lazy="selectin",
     )
-    active_version: Mapped[Optional["PromptVersion"]] = relationship(
+    active_version: Mapped[PromptVersion | None] = relationship(
         "PromptVersion",
         foreign_keys=[active_version_id],
         post_update=True,
@@ -113,29 +113,25 @@ class PromptVersion(TimestampMixin, Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    variables: Mapped[Optional[list[str]]] = mapped_column(
-        ARRAY(String), default=list, nullable=True
-    )
-    change_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+    variables: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list, nullable=True)
+    change_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    performance_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    performance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     is_published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    template: Mapped["PromptTemplate"] = relationship(
+    template: Mapped[PromptTemplate] = relationship(
         "PromptTemplate",
         back_populates="versions",
         foreign_keys=[template_id],
     )
-    creator: Mapped[Optional["User"]] = relationship(
-        "User", back_populates="prompt_versions"
-    )
+    creator: Mapped[User | None] = relationship("User", back_populates="prompt_versions")
 
     def __repr__(self) -> str:
         return f"<PromptVersion template={self.template_id} v{self.version_number}>"

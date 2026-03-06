@@ -5,17 +5,16 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
 
-class ActionStatus(str, enum.Enum):
+class ActionStatus(enum.StrEnum):
     PENDING_APPROVAL = "pending_approval"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -33,19 +32,19 @@ class ActionResponse(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
     conversation_id: uuid.UUID
-    message_id: Optional[uuid.UUID] = None
+    message_id: uuid.UUID | None = None
     agent_id: uuid.UUID
     tool_id: uuid.UUID
     tool_name: str
-    parameters: Optional[dict[str, Any]] = None
-    result: Optional[dict[str, Any]] = None
+    parameters: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
     status: ActionStatus
-    error_message: Optional[str] = None
-    execution_time_ms: Optional[float] = None
+    error_message: str | None = None
+    execution_time_ms: float | None = None
     requires_approval: bool
-    approved_by: Optional[uuid.UUID] = None
-    approved_at: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
+    approved_by: uuid.UUID | None = None
+    approved_at: datetime | None = None
+    rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -58,15 +57,11 @@ class ActionResponse(BaseModel):
 
 
 class ActionApproveRequest(BaseModel):
-    notes: Optional[str] = Field(
-        None, max_length=1000, description="Optional approval notes"
-    )
+    notes: str | None = Field(None, max_length=1000, description="Optional approval notes")
 
 
 class ActionRejectRequest(BaseModel):
-    reason: str = Field(
-        ..., min_length=1, max_length=1000, description="Reason for rejection"
-    )
+    reason: str = Field(..., min_length=1, max_length=1000, description="Reason for rejection")
 
 
 # ---------------------------------------------------------------------------
@@ -75,11 +70,11 @@ class ActionRejectRequest(BaseModel):
 
 
 class ActionFilter(BaseModel):
-    status: Optional[ActionStatus] = None
-    tool_id: Optional[uuid.UUID] = None
-    conversation_id: Optional[uuid.UUID] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    status: ActionStatus | None = None
+    tool_id: uuid.UUID | None = None
+    conversation_id: uuid.UUID | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
 
 
 class ActionStats(BaseModel):
@@ -87,6 +82,6 @@ class ActionStats(BaseModel):
     completed: int
     failed: int
     pending_approval: int
-    avg_execution_time_ms: Optional[float] = Field(
+    avg_execution_time_ms: float | None = Field(
         None, description="Average execution time across completed actions"
     )

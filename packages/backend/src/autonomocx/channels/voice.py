@@ -7,12 +7,12 @@ including speech-to-text (STT) and text-to-speech (TTS) via Twilio.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
 from typing import Any
 
 import structlog
 
 from autonomocx.core.config import get_settings
+
 from .base import ChannelAdapter, InboundMessage, OutboundMessage
 
 logger = structlog.get_logger(__name__)
@@ -44,7 +44,8 @@ class VoiceAdapter(ChannelAdapter):
         """Generate TwiML for the initial call greeting with speech gathering."""
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Gather input="speech" action="{action_url}" language="{language}" speechTimeout="auto" speechModel="phone_call">
+    <Gather input="speech" action="{action_url}" language="{language}"
+        speechTimeout="auto" speechModel="phone_call">
         <Say voice="{voice}">{greeting}</Say>
     </Gather>
     <Say voice="{voice}">I didn't catch that. Goodbye.</Say>
@@ -63,7 +64,8 @@ class VoiceAdapter(ChannelAdapter):
         if gather_more:
             return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Gather input="speech" action="{action_url}" language="{language}" speechTimeout="auto" speechModel="phone_call">
+    <Gather input="speech" action="{action_url}" language="{language}"
+        speechTimeout="auto" speechModel="phone_call">
         <Say voice="{voice}">{text}</Say>
     </Gather>
     <Say voice="{voice}">Thank you for calling. Goodbye.</Say>
@@ -174,9 +176,7 @@ class VoiceAdapter(ChannelAdapter):
 
             settings = get_settings()
             auth_token = (
-                settings.twilio_auth_token.get_secret_value()
-                if settings.twilio_auth_token
-                else ""
+                settings.twilio_auth_token.get_secret_value() if settings.twilio_auth_token else ""
             )
             validator = RequestValidator(auth_token)
             return validator.validate(url, params, signature)

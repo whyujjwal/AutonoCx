@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Plus, Wrench, Code, Globe, Webhook, MoreVertical, Pencil, Trash2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Table, type Column } from '@/components/ui/Table';
 import { Dropdown } from '@/components/ui/Dropdown';
@@ -105,7 +104,7 @@ export default function ToolsPage() {
       key: 'actions',
       header: '',
       className: 'w-10',
-      render: (tool) => (
+      render: (_tool) => (
         <Dropdown
           trigger={
             <button className="rounded p-1 text-surface-400 hover:bg-surface-50">

@@ -19,13 +19,13 @@ logger = structlog.get_logger(__name__)
 # ------------------------------------------------------------------
 
 
-class Sentiment(str, enum.Enum):
+class Sentiment(enum.StrEnum):
     POSITIVE = "positive"
     NEUTRAL = "neutral"
     NEGATIVE = "negative"
 
 
-class UrgencyLevel(str, enum.Enum):
+class UrgencyLevel(enum.StrEnum):
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"

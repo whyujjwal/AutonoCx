@@ -20,11 +20,7 @@ async def list_agents(
     org_id: uuid.UUID,
 ) -> list[AgentConfig]:
     """Return all agents belonging to *org_id*."""
-    stmt = (
-        select(AgentConfig)
-        .where(AgentConfig.org_id == org_id)
-        .order_by(AgentConfig.name)
-    )
+    stmt = select(AgentConfig).where(AgentConfig.org_id == org_id).order_by(AgentConfig.name)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -34,9 +30,7 @@ async def get_agent(
     agent_id: uuid.UUID,
 ) -> AgentConfig:
     """Return a single agent.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(AgentConfig).where(AgentConfig.id == agent_id)
-    )
+    result = await db.execute(select(AgentConfig).where(AgentConfig.id == agent_id))
     agent = result.scalar_one_or_none()
     if agent is None:
         raise NotFoundError(f"Agent {agent_id} not found.")
@@ -79,9 +73,17 @@ async def update_agent(
     agent = await get_agent(db, agent_id)
 
     updatable = (
-        "name", "description", "system_prompt", "llm_provider", "llm_model",
-        "temperature", "max_tokens", "tools_enabled", "fallback_agent_id",
-        "is_active", "metadata_",
+        "name",
+        "description",
+        "system_prompt",
+        "llm_provider",
+        "llm_model",
+        "temperature",
+        "max_tokens",
+        "tools_enabled",
+        "fallback_agent_id",
+        "is_active",
+        "metadata_",
     )
     for field in updatable:
         if field in data:

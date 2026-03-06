@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatRelativeTime, truncate } from '@/lib/formatters';
+import { formatRelativeTime } from '@/lib/formatters';
 import { clsx } from 'clsx';
 import type { ConversationStatus, ChannelType } from '@/types/conversation.types';
 

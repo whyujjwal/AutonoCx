@@ -27,7 +27,7 @@ export function useWebSocket({
 }: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const retriesRef = useRef(0);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [status, setStatus] = useState<WebSocketStatus>('disconnected');
   const accessToken = useAuthStore((s) => s.accessToken);
 

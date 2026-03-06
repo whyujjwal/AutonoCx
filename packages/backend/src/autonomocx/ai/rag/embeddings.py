@@ -25,9 +25,8 @@ class EmbeddingService:
     ) -> None:
         settings = get_settings()
         self._client = AsyncOpenAI(
-            api_key=api_key or (
-                settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
-            ),
+            api_key=api_key
+            or (settings.openai_api_key.get_secret_value() if settings.openai_api_key else None),
             timeout=settings.openai_timeout,
             max_retries=settings.openai_max_retries,
         )
@@ -63,9 +62,7 @@ class EmbeddingService:
             return []
 
         # Filter out empty strings but track indices for re-assembly
-        indexed: list[tuple[int, str]] = [
-            (i, t) for i, t in enumerate(texts) if t and t.strip()
-        ]
+        indexed: list[tuple[int, str]] = [(i, t) for i, t in enumerate(texts) if t and t.strip()]
         if not indexed:
             return [[0.0] * self._dimensions] * len(texts)
 

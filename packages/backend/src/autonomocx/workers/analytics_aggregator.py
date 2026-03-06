@@ -9,15 +9,15 @@ real-time queries.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from autonomocx.models.analytics import MetricPeriod, MetricSnapshot
 from autonomocx.models.action import ActionExecution, ActionStatus
+from autonomocx.models.analytics import MetricPeriod, MetricSnapshot
 from autonomocx.models.conversation import Conversation, ConversationStatus, Message
 
 logger = structlog.get_logger(__name__)
@@ -215,9 +215,7 @@ class AnalyticsAggregator:
             "actions_rejected": actions_rejected,
             "escalation_count": escalation_count,
             "escalation_rate": (
-                round(escalation_count / total_conversations, 4)
-                if total_conversations > 0
-                else 0.0
+                round(escalation_count / total_conversations, 4) if total_conversations > 0 else 0.0
             ),
         }
 
@@ -228,9 +226,7 @@ class AnalyticsAggregator:
         """
         from autonomocx.models.organization import Organization
 
-        result = await db.execute(
-            select(Organization.id).where(Organization.is_active.is_(True))
-        )
+        result = await db.execute(select(Organization.id).where(Organization.is_active.is_(True)))
         org_ids = [row[0] for row in result.all()]
 
         count = 0

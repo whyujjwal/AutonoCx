@@ -82,10 +82,7 @@ class IntentClassifier:
         """Classify *message* against *available_intents* (defaults used if ``None``)."""
         intents = available_intents or DEFAULT_INTENTS
 
-        user_prompt = (
-            f"Available intents: {json.dumps(intents)}\n\n"
-            f"Customer message: {message}"
-        )
+        user_prompt = f"Available intents: {json.dumps(intents)}\n\nCustomer message: {message}"
 
         # Optionally include recent conversation history for context
         messages: list[dict] = [

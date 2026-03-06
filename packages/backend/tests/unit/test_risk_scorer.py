@@ -8,13 +8,10 @@ from __future__ import annotations
 
 import os
 
-import pytest
-
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("APP_ENV", "test")
 
 from autonomocx.models.tool import RiskLevel
-
 
 # ---------------------------------------------------------------------------
 # Risk scoring utility (inline implementation for testing)
@@ -112,9 +109,7 @@ class TestRiskScoring:
 
     def test_irreversible_increases_score(self):
         reversible = compute_risk_score(tool_risk_level=RiskLevel.MEDIUM)
-        irreversible = compute_risk_score(
-            tool_risk_level=RiskLevel.MEDIUM, is_irreversible=True
-        )
+        irreversible = compute_risk_score(tool_risk_level=RiskLevel.MEDIUM, is_irreversible=True)
         assert irreversible > reversible
 
     def test_low_confidence_increases_score(self):

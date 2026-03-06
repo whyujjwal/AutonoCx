@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select
@@ -25,10 +25,11 @@ logger = structlog.get_logger(__name__)
 # List / Read
 # ---------------------------------------------------------------------------
 
+
 async def list_conversations(
     db: AsyncSession,
     org_id: uuid.UUID,
-    filters: Optional[dict[str, Any]] = None,
+    filters: dict[str, Any] | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> PaginatedResponse:
@@ -60,8 +61,7 @@ async def list_conversations(
 
     # Page
     stmt = (
-        base
-        .order_by(Conversation.updated_at.desc())
+        base.order_by(Conversation.updated_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -80,9 +80,7 @@ async def get_conversation(
     conversation_id: uuid.UUID,
 ) -> Conversation:
     """Return a single conversation.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(Conversation).where(Conversation.id == conversation_id)
-    )
+    result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
     conv = result.scalar_one_or_none()
     if conv is None:
         raise NotFoundError(f"Conversation {conversation_id} not found.")
@@ -92,6 +90,7 @@ async def get_conversation(
 # ---------------------------------------------------------------------------
 # Create / Update
 # ---------------------------------------------------------------------------
+
 
 async def create_conversation(
     db: AsyncSession,
@@ -134,9 +133,16 @@ async def update_conversation(
     conv = await get_conversation(db, conversation_id)
 
     mutable_fields = (
-        "status", "priority", "sentiment", "intent",
-        "assigned_to", "agent_id", "metadata_",
-        "customer_name", "customer_email", "customer_phone",
+        "status",
+        "priority",
+        "sentiment",
+        "intent",
+        "assigned_to",
+        "agent_id",
+        "metadata_",
+        "customer_name",
+        "customer_email",
+        "customer_phone",
     )
     for field in mutable_fields:
         if field in data and data[field] is not None:
@@ -152,6 +158,7 @@ async def update_conversation(
 # ---------------------------------------------------------------------------
 # Status transitions
 # ---------------------------------------------------------------------------
+
 
 async def escalate_conversation(
     db: AsyncSession,

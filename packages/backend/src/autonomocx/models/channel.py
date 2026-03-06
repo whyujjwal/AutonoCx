@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -35,24 +35,22 @@ class ChannelConfig(TimestampMixin, Base):
     )
     channel_type: Mapped[str] = mapped_column(String(32), nullable=False)
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    agent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("agents.id", ondelete="SET NULL"),
         nullable=True,
     )
-    config: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, default=dict, nullable=True
-    )
-    webhook_secret: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=dict, nullable=True)
+    webhook_secret: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="channel_configs"
     )
-    agent: Mapped[Optional["AgentConfig"]] = relationship(
+    agent: Mapped[AgentConfig | None] = relationship(
         "AgentConfig", back_populates="channel_configs"
     )
 

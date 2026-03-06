@@ -30,12 +30,7 @@ async def get_users(
     total = (await db.execute(count_stmt)).scalar_one()
 
     # Paginated rows
-    stmt = (
-        base
-        .order_by(User.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    stmt = base.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(stmt)
     users = list(result.scalars().all())
 
@@ -76,9 +71,7 @@ async def create_user(
     data = user_data if isinstance(user_data, dict) else user_data.model_dump()
 
     # Duplicate email check
-    existing = await db.execute(
-        select(User).where(User.email == data["email"])
-    )
+    existing = await db.execute(select(User).where(User.email == data["email"]))
     if existing.scalar_one_or_none() is not None:
         raise ConflictError(f"Email {data['email']} is already registered.")
 

@@ -5,17 +5,16 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
 
-class TriggerType(str, enum.Enum):
+class TriggerType(enum.StrEnum):
     CONVERSATION_START = "conversation_start"
     KEYWORD = "keyword"
     INTENT = "intent"
@@ -24,7 +23,7 @@ class TriggerType(str, enum.Enum):
     MANUAL = "manual"
 
 
-class StepType(str, enum.Enum):
+class StepType(enum.StrEnum):
     LLM_CALL = "llm_call"
     TOOL_CALL = "tool_call"
     CONDITION = "condition"
@@ -40,16 +39,16 @@ class StepType(str, enum.Enum):
 
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: TriggerType
-    trigger_config: Optional[dict[str, Any]] = None
+    trigger_config: dict[str, Any] | None = None
 
 
 class WorkflowUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    trigger_config: Optional[dict[str, Any]] = None
-    is_active: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    trigger_config: dict[str, Any] | None = None
+    is_active: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -64,9 +63,9 @@ class WorkflowStepCreate(BaseModel):
         default_factory=dict,
         description="Step-type-specific configuration",
     )
-    on_success_step_id: Optional[uuid.UUID] = None
-    on_failure_step_id: Optional[uuid.UUID] = None
-    timeout_seconds: Optional[int] = Field(None, ge=1, le=3600)
+    on_success_step_id: uuid.UUID | None = None
+    on_failure_step_id: uuid.UUID | None = None
+    timeout_seconds: int | None = Field(None, ge=1, le=3600)
 
 
 class WorkflowStepResponse(BaseModel):
@@ -75,9 +74,9 @@ class WorkflowStepResponse(BaseModel):
     step_order: int
     step_type: StepType
     config: dict[str, Any]
-    on_success_step_id: Optional[uuid.UUID] = None
-    on_failure_step_id: Optional[uuid.UUID] = None
-    timeout_seconds: Optional[int] = None
+    on_success_step_id: uuid.UUID | None = None
+    on_failure_step_id: uuid.UUID | None = None
+    timeout_seconds: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -93,9 +92,9 @@ class WorkflowResponse(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: TriggerType
-    trigger_config: Optional[dict[str, Any]] = None
+    trigger_config: dict[str, Any] | None = None
     is_active: bool
     steps: list[WorkflowStepResponse] = Field(default_factory=list)
     created_at: datetime

@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     Boolean,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-class DocumentStatus(str, enum.Enum):
+class DocumentStatus(enum.StrEnum):
     PENDING = "pending"
     PROCESSING = "processing"
     INDEXED = "indexed"
@@ -57,27 +57,25 @@ class KnowledgeBase(TimestampMixin, Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    embedding_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
     chunk_size: Mapped[int] = mapped_column(Integer, default=512, nullable=False)
     chunk_overlap: Mapped[int] = mapped_column(Integer, default=64, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     document_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_chunks: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime, nullable=True
-    )
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="knowledge_bases"
     )
-    documents: Mapped[List["Document"]] = relationship(
+    documents: Mapped[list[Document]] = relationship(
         "Document", back_populates="knowledge_base", lazy="selectin"
     )
-    chunks: Mapped[List["DocumentChunk"]] = relationship(
+    chunks: Mapped[list[DocumentChunk]] = relationship(
         "DocumentChunk",
         back_populates="knowledge_base",
         lazy="noload",
@@ -101,35 +99,33 @@ class Document(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    title: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    source_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    source_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
-    file_path: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
-    file_type: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    content_hash: Mapped[Optional[str]] = mapped_column(
-        String(128), nullable=True, index=True
-    )
+    title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    source_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    file_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    file_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    file_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     status: Mapped[DocumentStatus] = mapped_column(
         Enum(DocumentStatus, name="document_status", native_enum=False, length=16),
         default=DocumentStatus.PENDING,
         nullable=False,
         index=True,
     )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    metadata_: Mapped[Optional[dict[str, Any]]] = mapped_column(
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB, default=dict, nullable=True
     )
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    knowledge_base: Mapped["KnowledgeBase"] = relationship(
+    knowledge_base: Mapped[KnowledgeBase] = relationship(
         "KnowledgeBase", back_populates="documents"
     )
-    chunks: Mapped[List["DocumentChunk"]] = relationship(
+    chunks: Mapped[list[DocumentChunk]] = relationship(
         "DocumentChunk",
         back_populates="document",
         order_by="DocumentChunk.chunk_index",
@@ -162,24 +158,20 @@ class DocumentChunk(TimestampMixin, Base):
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[Optional[Any]] = mapped_column(
+    embedding: Mapped[Any | None] = mapped_column(
         Vector(1536) if Vector is not None else None,  # type: ignore[arg-type]
         nullable=True,
     )
-    token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    metadata_: Mapped[Optional[dict[str, Any]]] = mapped_column(
+    token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB, default=dict, nullable=True
     )
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    document: Mapped["Document"] = relationship(
-        "Document", back_populates="chunks"
-    )
-    knowledge_base: Mapped["KnowledgeBase"] = relationship(
-        "KnowledgeBase", back_populates="chunks"
-    )
+    document: Mapped[Document] = relationship("Document", back_populates="chunks")
+    knowledge_base: Mapped[KnowledgeBase] = relationship("KnowledgeBase", back_populates="chunks")
 
     def __repr__(self) -> str:
         return f"<DocumentChunk doc={self.document_id} idx={self.chunk_index}>"

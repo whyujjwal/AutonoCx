@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import structlog
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.models.tool import Tool
@@ -69,13 +70,10 @@ class ToolRegistry:
         """Return active tools matching the given IDs."""
         if not tool_ids:
             return []
-        stmt = (
-            select(Tool)
-            .where(
-                and_(
-                    Tool.id.in_(tool_ids),
-                    Tool.is_active == True,  # noqa: E712
-                )
+        stmt = select(Tool).where(
+            and_(
+                Tool.id.in_(tool_ids),
+                Tool.is_active == True,  # noqa: E712
             )
         )
         result = await db.execute(stmt)
@@ -113,12 +111,14 @@ class ToolRegistry:
         formatted: list[dict[str, Any]] = []
         for tool in tools:
             schema = tool.parameters_schema or {"type": "object", "properties": {}}
-            formatted.append({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description or "",
-                    "parameters": schema,
-                },
-            })
+            formatted.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description or "",
+                        "parameters": schema,
+                    },
+                }
+            )
         return formatted

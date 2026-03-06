@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import structlog
 
@@ -19,14 +19,68 @@ from .retriever import ChunkResult
 logger = structlog.get_logger(__name__)
 
 # Common English stop-words to exclude from TF-IDF
-_STOP_WORDS = frozenset({
-    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "is", "it", "this", "that", "was", "are", "be",
-    "has", "had", "have", "do", "does", "did", "will", "would", "can",
-    "could", "should", "may", "might", "from", "not", "no", "so", "if",
-    "as", "we", "i", "you", "he", "she", "they", "me", "my", "your",
-    "our", "his", "her", "its", "them", "been", "being", "were", "am",
-})
+_STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "is",
+        "it",
+        "this",
+        "that",
+        "was",
+        "are",
+        "be",
+        "has",
+        "had",
+        "have",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "can",
+        "could",
+        "should",
+        "may",
+        "might",
+        "from",
+        "not",
+        "no",
+        "so",
+        "if",
+        "as",
+        "we",
+        "i",
+        "you",
+        "he",
+        "she",
+        "they",
+        "me",
+        "my",
+        "your",
+        "our",
+        "his",
+        "her",
+        "its",
+        "them",
+        "been",
+        "being",
+        "were",
+        "am",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,10 +159,7 @@ class Reranker:
                 doc_vec[term] = count * idf.get(term, 1.0)
 
             tfidf_sim = self._cosine_sim(query_vec, doc_vec)
-            combined = (
-                self._vector_weight * chunk.score
-                + self._tfidf_weight * tfidf_sim
-            )
+            combined = self._vector_weight * chunk.score + self._tfidf_weight * tfidf_sim
             ranked.append(
                 RankedResult(
                     chunk=chunk,

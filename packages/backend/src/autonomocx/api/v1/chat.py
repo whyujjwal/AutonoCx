@@ -133,9 +133,7 @@ def _serialize_message(msg: Any) -> dict[str, Any]:
         "role": msg.role.value if hasattr(msg.role, "value") else msg.role,
         "content": msg.content,
         "content_type": (
-            msg.content_type.value
-            if hasattr(msg.content_type, "value")
-            else msg.content_type
+            msg.content_type.value if hasattr(msg.content_type, "value") else msg.content_type
         ),
         "created_at": msg.created_at.isoformat() if msg.created_at else None,
     }
@@ -189,17 +187,13 @@ async def websocket_chat(
             try:
                 payload = json.loads(raw)
             except json.JSONDecodeError:
-                await _send_json(
-                    websocket, "error", {"detail": "Invalid JSON"}
-                )
+                await _send_json(websocket, "error", {"detail": "Invalid JSON"})
                 continue
 
             msg_type = payload.get("type", "")
 
             if msg_type == "message.send":
-                await _handle_message_send(
-                    websocket, conversation_id, user, payload, db
-                )
+                await _handle_message_send(websocket, conversation_id, user, payload, db)
             elif msg_type == "typing.start":
                 await _handle_typing(websocket, conversation_id, user, True)
             elif msg_type == "typing.stop":

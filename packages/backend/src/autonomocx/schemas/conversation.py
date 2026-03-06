@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -16,7 +16,6 @@ from autonomocx.models.conversation import (
     Priority,
 )
 
-
 # ---------------------------------------------------------------------------
 # Conversation requests
 # ---------------------------------------------------------------------------
@@ -24,27 +23,27 @@ from autonomocx.models.conversation import (
 
 class ConversationCreate(BaseModel):
     channel: ChannelType
-    customer_id: Optional[str] = Field(None, max_length=255)
-    customer_name: Optional[str] = Field(None, max_length=255)
-    customer_email: Optional[EmailStr] = None
-    customer_phone: Optional[str] = Field(None, max_length=32)
-    agent_id: Optional[uuid.UUID] = None
-    metadata: Optional[dict[str, Any]] = None
+    customer_id: str | None = Field(None, max_length=255)
+    customer_name: str | None = Field(None, max_length=255)
+    customer_email: EmailStr | None = None
+    customer_phone: str | None = Field(None, max_length=32)
+    agent_id: uuid.UUID | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class ConversationUpdate(BaseModel):
-    status: Optional[ConversationStatus] = None
-    priority: Optional[Priority] = None
-    assigned_to: Optional[uuid.UUID] = None
+    status: ConversationStatus | None = None
+    priority: Priority | None = None
+    assigned_to: uuid.UUID | None = None
 
 
 class ConversationFilter(BaseModel):
-    status: Optional[ConversationStatus] = None
-    channel: Optional[ChannelType] = None
-    priority: Optional[Priority] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    customer_id: Optional[str] = None
+    status: ConversationStatus | None = None
+    channel: ChannelType | None = None
+    priority: Priority | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    customer_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -55,24 +54,24 @@ class ConversationFilter(BaseModel):
 class ConversationResponse(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
-    agent_id: Optional[uuid.UUID] = None
+    agent_id: uuid.UUID | None = None
     channel: ChannelType
-    channel_id: Optional[str] = None
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
+    channel_id: str | None = None
+    customer_id: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
+    customer_phone: str | None = None
     status: ConversationStatus
     priority: Priority
-    sentiment: Optional[float] = None
-    intent: Optional[str] = None
-    assigned_to: Optional[uuid.UUID] = None
-    resolved_by: Optional[str] = None
-    resolution_time_seconds: Optional[int] = None
-    satisfaction_score: Optional[float] = None
-    metadata: Optional[dict[str, Any]] = Field(None, alias="metadata_")
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    sentiment: float | None = None
+    intent: str | None = None
+    assigned_to: uuid.UUID | None = None
+    resolved_by: str | None = None
+    resolution_time_seconds: int | None = None
+    satisfaction_score: float | None = None
+    metadata: dict[str, Any] | None = Field(None, alias="metadata_")
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -84,17 +83,15 @@ class ConversationListResponse(BaseModel):
 
     id: uuid.UUID
     org_id: uuid.UUID
-    agent_id: Optional[uuid.UUID] = None
+    agent_id: uuid.UUID | None = None
     channel: ChannelType
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    customer_email: Optional[str] = None
+    customer_id: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
     status: ConversationStatus
     priority: Priority
-    assigned_to: Optional[uuid.UUID] = None
-    last_message: Optional[str] = Field(
-        None, description="Preview of the most recent message"
-    )
+    assigned_to: uuid.UUID | None = None
+    last_message: str | None = Field(None, description="Preview of the most recent message")
     message_count: int = Field(0, description="Total messages in the conversation")
     created_at: datetime
     updated_at: datetime
@@ -110,22 +107,22 @@ class ConversationListResponse(BaseModel):
 class MessageCreate(BaseModel):
     content: str = Field(..., min_length=1)
     content_type: ContentType = Field(default=ContentType.TEXT)
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class MessageResponse(BaseModel):
     id: uuid.UUID
     conversation_id: uuid.UUID
     role: MessageRole
-    content: Optional[str] = None
+    content: str | None = None
     content_type: ContentType
-    metadata: Optional[dict[str, Any]] = Field(None, alias="metadata_")
-    tool_call_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    llm_model_used: Optional[str] = None
-    latency_ms: Optional[int] = None
+    metadata: dict[str, Any] | None = Field(None, alias="metadata_")
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    llm_model_used: str | None = None
+    latency_ms: int | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

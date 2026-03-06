@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import delete, select
@@ -25,16 +25,13 @@ logger = structlog.get_logger(__name__)
 # Knowledge Base CRUD
 # ---------------------------------------------------------------------------
 
+
 async def list_knowledge_bases(
     db: AsyncSession,
     org_id: uuid.UUID,
 ) -> list[KnowledgeBase]:
     """Return all knowledge bases for *org_id*."""
-    stmt = (
-        select(KnowledgeBase)
-        .where(KnowledgeBase.org_id == org_id)
-        .order_by(KnowledgeBase.name)
-    )
+    stmt = select(KnowledgeBase).where(KnowledgeBase.org_id == org_id).order_by(KnowledgeBase.name)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -68,9 +65,7 @@ async def get_knowledge_base(
     kb_id: uuid.UUID,
 ) -> KnowledgeBase:
     """Return a single knowledge base.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
-    )
+    result = await db.execute(select(KnowledgeBase).where(KnowledgeBase.id == kb_id))
     kb = result.scalar_one_or_none()
     if kb is None:
         raise NotFoundError(f"Knowledge base {kb_id} not found.")
@@ -85,8 +80,14 @@ async def update_knowledge_base(
     """Partially update a knowledge base."""
     kb = await get_knowledge_base(db, kb_id)
 
-    for field in ("name", "description", "embedding_model", "chunk_size",
-                  "chunk_overlap", "is_active"):
+    for field in (
+        "name",
+        "description",
+        "embedding_model",
+        "chunk_size",
+        "chunk_overlap",
+        "is_active",
+    ):
         if field in data and data[field] is not None:
             setattr(kb, field, data[field])
 
@@ -100,6 +101,7 @@ async def update_knowledge_base(
 # ---------------------------------------------------------------------------
 # Document management
 # ---------------------------------------------------------------------------
+
 
 async def list_documents(
     db: AsyncSession,
@@ -190,9 +192,7 @@ async def delete_document(
 
     Also decrements the parent knowledge base counters.
     """
-    result = await db.execute(
-        select(Document).where(Document.id == doc_id)
-    )
+    result = await db.execute(select(Document).where(Document.id == doc_id))
     doc = result.scalar_one_or_none()
     if doc is None:
         raise NotFoundError(f"Document {doc_id} not found.")
@@ -201,18 +201,14 @@ async def delete_document(
     chunk_count = doc.chunk_count
 
     # Delete chunks first
-    await db.execute(
-        delete(DocumentChunk).where(DocumentChunk.document_id == doc_id)
-    )
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc_id))
 
     # Delete document
     await db.delete(doc)
     await db.flush()
 
     # Update kb counters
-    kb_result = await db.execute(
-        select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
-    )
+    kb_result = await db.execute(select(KnowledgeBase).where(KnowledgeBase.id == kb_id))
     kb = kb_result.scalar_one_or_none()
     if kb is not None:
         kb.document_count = max(0, kb.document_count - 1)
@@ -227,11 +223,12 @@ async def delete_document(
 # Semantic search
 # ---------------------------------------------------------------------------
 
+
 async def search_knowledge(
     db: AsyncSession,
     org_id: uuid.UUID,
     query: str,
-    kb_ids: Optional[list[uuid.UUID]] = None,
+    kb_ids: list[uuid.UUID] | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
     """Search across knowledge bases using vector similarity.

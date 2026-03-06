@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import os
 
-import pytest
-
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("APP_ENV", "test")
 

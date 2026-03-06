@@ -51,42 +51,55 @@ class ExtractionResult:
 
 _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     # Email
-    ("email", re.compile(
-        r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"
-    )),
+    ("email", re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b")),
     # Phone (international, US, common formats)
-    ("phone", re.compile(
-        r"(?:\+?\d{1,3}[\s\-.]?)?"
-        r"(?:\(?\d{2,4}\)?[\s\-.]?)"
-        r"\d{3,4}[\s\-.]?\d{3,4}\b"
-    )),
+    (
+        "phone",
+        re.compile(
+            r"(?:\+?\d{1,3}[\s\-.]?)?"
+            r"(?:\(?\d{2,4}\)?[\s\-.]?)"
+            r"\d{3,4}[\s\-.]?\d{3,4}\b"
+        ),
+    ),
     # Order ID (common patterns: ORD-12345, #12345, ORDER-ABC-123)
-    ("order_id", re.compile(
-        r"\b(?:ORD|ORDER|INV|INVOICE)[#\-_]?\s*[A-Z0-9\-]{4,20}\b",
-        re.IGNORECASE,
-    )),
+    (
+        "order_id",
+        re.compile(
+            r"\b(?:ORD|ORDER|INV|INVOICE)[#\-_]?\s*[A-Z0-9\-]{4,20}\b",
+            re.IGNORECASE,
+        ),
+    ),
     # Tracking number (common carrier patterns)
-    ("tracking_number", re.compile(
-        r"\b(?:1Z[A-Z0-9]{16}|"  # UPS
-        r"\d{12,22}|"  # FedEx/USPS
-        r"[A-Z]{2}\d{9}[A-Z]{2})\b"  # International
-    )),
+    (
+        "tracking_number",
+        re.compile(
+            r"\b(?:1Z[A-Z0-9]{16}|"  # UPS
+            r"\d{12,22}|"  # FedEx/USPS
+            r"[A-Z]{2}\d{9}[A-Z]{2})\b"  # International
+        ),
+    ),
     # Currency amount ($12.34, USD 100, 50.00 EUR)
-    ("amount", re.compile(
-        r"(?:(?:USD|EUR|GBP|CAD|AUD)\s*)?[\$\u20AC\u00A3]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?"
-        r"(?:\s*(?:USD|EUR|GBP|CAD|AUD|dollars?|euros?|pounds?))?",
-        re.IGNORECASE,
-    )),
+    (
+        "amount",
+        re.compile(
+            r"(?:(?:USD|EUR|GBP|CAD|AUD)\s*)?[\$\u20AC\u00A3]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?"
+            r"(?:\s*(?:USD|EUR|GBP|CAD|AUD|dollars?|euros?|pounds?))?",
+            re.IGNORECASE,
+        ),
+    ),
     # Date (various common formats)
-    ("date", re.compile(
-        r"\b(?:"
-        r"\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4}|"
-        r"\d{4}[/\-\.]\d{1,2}[/\-\.]\d{1,2}|"
-        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}|"
-        r"\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}"
-        r")\b",
-        re.IGNORECASE,
-    )),
+    (
+        "date",
+        re.compile(
+            r"\b(?:"
+            r"\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4}|"
+            r"\d{4}[/\-\.]\d{1,2}[/\-\.]\d{1,2}|"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}|"
+            r"\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}"
+            r")\b",
+            re.IGNORECASE,
+        ),
+    ),
 ]
 
 
@@ -129,7 +142,7 @@ class EntityExtractor:
                 )
 
         # Sort by position in text
-        entities.sort(key=lambda e: (e.start if e.start >= 0 else float("inf")))
+        entities.sort(key=lambda e: e.start if e.start >= 0 else float("inf"))
 
         return ExtractionResult(entities=entities, raw_text=text)
 

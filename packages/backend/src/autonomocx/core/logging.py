@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from autonomocx.core.config import Settings
 
 
-def setup_logging(settings: "Settings") -> None:
+def setup_logging(settings: Settings) -> None:
     """Configure structlog and the stdlib logging bridge.
 
     In *production* the output is newline-delimited JSON so it can be
@@ -61,14 +61,16 @@ def setup_logging(settings: "Settings") -> None:
     # This ensures that third-party libraries (uvicorn, sqlalchemy, etc.)
     # also emit structlog-formatted output.
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(structlog.stdlib.ProcessorFormatter(
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            *shared_processors,
-            structlog.processors.format_exc_info,
-            renderer,
-        ],
-    ))
+    handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            processors=[
+                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                *shared_processors,
+                structlog.processors.format_exc_info,
+                renderer,
+            ],
+        )
+    )
 
     root_logger = logging.getLogger()
     root_logger.handlers.clear()

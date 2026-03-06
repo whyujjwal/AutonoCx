@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.core.database import get_db
@@ -30,14 +30,14 @@ router = APIRouter(
 class AuditLogOut(BaseModel):
     id: UUID
     org_id: UUID
-    user_id: Optional[UUID] = None
-    user_email: Optional[str] = None
+    user_id: UUID | None = None
+    user_email: str | None = None
     action: str
     resource_type: str
-    resource_id: Optional[str] = None
-    details: Optional[dict[str, Any]] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    resource_id: str | None = None
+    details: dict[str, Any] | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -64,12 +64,12 @@ class PaginatedAuditLogs(BaseModel):
 async def list_audit_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    action: Optional[str] = Query(None, description="Filter by action type"),
-    resource_type: Optional[str] = Query(None, description="Filter by resource type"),
-    resource_id: Optional[str] = Query(None, description="Filter by resource ID"),
-    user_id: Optional[UUID] = Query(None, description="Filter by user"),
-    start_date: Optional[datetime] = Query(None, description="Start of date range"),
-    end_date: Optional[datetime] = Query(None, description="End of date range"),
+    action: str | None = Query(None, description="Filter by action type"),
+    resource_type: str | None = Query(None, description="Filter by resource type"),
+    resource_id: str | None = Query(None, description="Filter by resource ID"),
+    user_id: UUID | None = Query(None, description="Filter by user"),
+    start_date: datetime | None = Query(None, description="Start of date range"),
+    end_date: datetime | None = Query(None, description="End of date range"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedAuditLogs:
@@ -101,11 +101,11 @@ async def list_audit_logs(
     response_class=StreamingResponse,
 )
 async def export_audit_logs(
-    action: Optional[str] = Query(None),
-    resource_type: Optional[str] = Query(None),
-    user_id: Optional[UUID] = Query(None),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    action: str | None = Query(None),
+    resource_type: str | None = Query(None),
+    user_id: UUID | None = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:

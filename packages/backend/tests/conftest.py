@@ -12,9 +12,7 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Any
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
@@ -36,11 +34,10 @@ os.environ.setdefault(
 )
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")
 
+from autonomocx.core.security import get_password_hash  # noqa: E402
 from autonomocx.models.base import Base  # noqa: E402
 from autonomocx.models.organization import Organization, PlanType  # noqa: E402
 from autonomocx.models.user import User, UserRole  # noqa: E402
-from autonomocx.core.security import get_password_hash  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Engine & session fixtures
@@ -50,7 +47,7 @@ TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 @pytest_asyncio.fixture(scope="session")
-async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
+async def test_engine() -> AsyncGenerator[AsyncEngine]:
     """Create an async engine for the test database.
 
     Creates all tables at the start of the test session and drops them
@@ -70,7 +67,7 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession]:
     """Provide a transactional async session that rolls back after each test.
 
     Each test gets a clean database state without needing to truncate tables.
@@ -98,7 +95,7 @@ async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, N
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     """Provide an ``httpx.AsyncClient`` connected to the FastAPI app.
 
     The app's ``get_db`` dependency is overridden to use the test session,
@@ -115,7 +112,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
         app = FastAPI()
 
-    async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+    async def _override_get_db() -> AsyncGenerator[AsyncSession]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_get_db

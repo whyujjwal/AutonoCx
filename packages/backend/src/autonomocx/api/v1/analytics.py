@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.core.database import get_db
@@ -31,20 +30,20 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 class DashboardKPI(BaseModel):
     total_conversations: int
     active_conversations: int
-    avg_resolution_time_seconds: Optional[float] = None
-    avg_satisfaction_score: Optional[float] = None
+    avg_resolution_time_seconds: float | None = None
+    avg_satisfaction_score: float | None = None
     total_messages_today: int
     total_actions_today: int
     escalation_rate: float
     ai_resolution_rate: float
     pending_approvals: int
-    total_cost_today_usd: Optional[float] = None
+    total_cost_today_usd: float | None = None
 
 
 class TimeSeriesPoint(BaseModel):
     timestamp: datetime
     value: float
-    label: Optional[str] = None
+    label: str | None = None
 
 
 class ConversationMetrics(BaseModel):
@@ -54,8 +53,8 @@ class ConversationMetrics(BaseModel):
     by_status: dict[str, int]
     by_channel: dict[str, int]
     by_priority: dict[str, int]
-    avg_resolution_time_seconds: Optional[float] = None
-    avg_satisfaction_score: Optional[float] = None
+    avg_resolution_time_seconds: float | None = None
+    avg_satisfaction_score: float | None = None
     trend: list[TimeSeriesPoint] = []
 
 
@@ -64,8 +63,8 @@ class ActionMetrics(BaseModel):
     period_end: date
     total: int
     by_status: dict[str, int]
-    approval_rate: Optional[float] = None
-    avg_execution_time_ms: Optional[float] = None
+    approval_rate: float | None = None
+    avg_execution_time_ms: float | None = None
     top_tools: list[dict[str, int | str]] = []
     trend: list[TimeSeriesPoint] = []
 
@@ -74,13 +73,13 @@ class AgentPerformanceItem(BaseModel):
     agent_id: UUID
     agent_name: str
     total_conversations: int
-    avg_resolution_time_seconds: Optional[float] = None
-    avg_satisfaction_score: Optional[float] = None
+    avg_resolution_time_seconds: float | None = None
+    avg_satisfaction_score: float | None = None
     escalation_rate: float
     total_messages: int
     total_actions: int
-    avg_latency_ms: Optional[float] = None
-    total_cost_usd: Optional[float] = None
+    avg_latency_ms: float | None = None
+    total_cost_usd: float | None = None
 
 
 class AgentPerformanceReport(BaseModel):
@@ -91,8 +90,8 @@ class AgentPerformanceReport(BaseModel):
 
 class CostLineItem(BaseModel):
     category: str
-    model: Optional[str] = None
-    provider: Optional[str] = None
+    model: str | None = None
+    provider: str | None = None
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
@@ -133,8 +132,8 @@ async def dashboard(
 )
 async def conversation_metrics(
     period_days: int = Query(30, ge=1, le=365),
-    channel: Optional[str] = None,
-    agent_id: Optional[UUID] = None,
+    channel: str | None = None,
+    agent_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ConversationMetrics:
@@ -156,8 +155,8 @@ async def conversation_metrics(
 )
 async def action_metrics(
     period_days: int = Query(30, ge=1, le=365),
-    tool_id: Optional[UUID] = None,
-    agent_id: Optional[UUID] = None,
+    tool_id: UUID | None = None,
+    agent_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ActionMetrics:
@@ -198,8 +197,8 @@ async def agent_performance(
 )
 async def cost_breakdown(
     period_days: int = Query(30, ge=1, le=365),
-    provider: Optional[str] = None,
-    model: Optional[str] = None,
+    provider: str | None = None,
+    model: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> CostBreakdown:

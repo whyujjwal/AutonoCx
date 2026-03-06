@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from typing import Any
 
 import structlog
 from sqlalchemy import select, update
@@ -195,9 +194,7 @@ class DocumentProcessor:
 
         Returns the number of documents processed.
         """
-        result = await db.execute(
-            select(Document).where(Document.status == DocumentStatus.PENDING)
-        )
+        result = await db.execute(select(Document).where(Document.status == DocumentStatus.PENDING))
         documents = result.scalars().all()
 
         processed = 0

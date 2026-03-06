@@ -28,6 +28,7 @@ def _escalation_channel(org_id: uuid.UUID) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 async def notify_supervisor(
     redis: Any,  # redis.asyncio.Redis
     org_id: uuid.UUID,
@@ -45,7 +46,11 @@ async def notify_supervisor(
         "action_id": str(action_execution.id),
         "tool_id": str(action_execution.tool_id),
         "conversation_id": str(action_execution.conversation_id),
-        "status": action_execution.status.value if hasattr(action_execution.status, "value") else str(action_execution.status),
+        "status": (
+            action_execution.status.value
+            if hasattr(action_execution.status, "value")
+            else str(action_execution.status)
+        ),
         "input_params": action_execution.input_params,
         "risk_score": str(action_execution.risk_score) if action_execution.risk_score else None,
         "requires_approval": action_execution.requires_approval,
@@ -85,12 +90,24 @@ async def notify_escalation(
         "customer_id": conversation.customer_id,
         "customer_name": conversation.customer_name,
         "customer_email": conversation.customer_email,
-        "channel": conversation.channel.value if hasattr(conversation.channel, "value") else str(conversation.channel),
-        "priority": conversation.priority.value if hasattr(conversation.priority, "value") else str(conversation.priority),
+        "channel": (
+            conversation.channel.value
+            if hasattr(conversation.channel, "value")
+            else str(conversation.channel)
+        ),
+        "priority": (
+            conversation.priority.value
+            if hasattr(conversation.priority, "value")
+            else str(conversation.priority)
+        ),
         "sentiment": conversation.sentiment,
         "intent": conversation.intent,
         "assigned_to": str(conversation.assigned_to) if conversation.assigned_to else None,
-        "status": conversation.status.value if hasattr(conversation.status, "value") else str(conversation.status),
+        "status": (
+            conversation.status.value
+            if hasattr(conversation.status, "value")
+            else str(conversation.status)
+        ),
         "started_at": (
             conversation.started_at.isoformat()
             if hasattr(conversation, "started_at") and conversation.started_at

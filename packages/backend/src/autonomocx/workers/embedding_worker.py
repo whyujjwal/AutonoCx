@@ -9,10 +9,9 @@ to generate vector representations.
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.core.config import get_settings
@@ -97,9 +96,7 @@ class EmbeddingWorker:
 
         Returns ``True`` on success, ``False`` on failure.
         """
-        result = await db.execute(
-            select(DocumentChunk).where(DocumentChunk.id == chunk_id)
-        )
+        result = await db.execute(select(DocumentChunk).where(DocumentChunk.id == chunk_id))
         chunk = result.scalar_one_or_none()
         if chunk is None:
             logger.error("chunk_not_found", chunk_id=str(chunk_id))

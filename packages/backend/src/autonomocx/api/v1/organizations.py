@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -34,7 +34,7 @@ class OrganizationOut(BaseModel):
     name: str
     slug: str
     plan: PlanType
-    settings: Optional[dict[str, Any]] = None
+    settings: dict[str, Any] | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -43,8 +43,8 @@ class OrganizationOut(BaseModel):
 
 
 class OrganizationUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    settings: Optional[dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    settings: dict[str, Any] | None = None
 
 
 class ApiKeyOut(BaseModel):
@@ -53,8 +53,8 @@ class ApiKeyOut(BaseModel):
     prefix: str = Field(..., description="First 8 characters of the key for identification")
     scopes: list[str]
     is_active: bool
-    last_used_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
+    last_used_at: datetime | None = None
+    expires_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -63,19 +63,20 @@ class ApiKeyOut(BaseModel):
 class ApiKeyCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     scopes: list[str] = Field(default_factory=lambda: ["read", "write"])
-    expires_in_days: Optional[int] = Field(
+    expires_in_days: int | None = Field(
         None, ge=1, le=365, description="Days until key expires (null = never)"
     )
 
 
 class ApiKeyCreateResponse(BaseModel):
     """Returned only on creation -- includes the full secret key exactly once."""
+
     id: UUID
     name: str
     key: str = Field(..., description="Full API key (shown only once)")
     prefix: str
     scopes: list[str]
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     created_at: datetime
 
 

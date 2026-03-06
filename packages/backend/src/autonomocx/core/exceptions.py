@@ -13,7 +13,8 @@ logger = structlog.get_logger(__name__)
 
 # ── Base exception ─────────────────────────────────────────────────────
 
-class AppException(Exception):
+
+class AppError(Exception):
     """Base exception for all application-specific errors.
 
     Sub-classes set sensible defaults for ``status_code`` and ``error_code``
@@ -55,43 +56,44 @@ class AppException(Exception):
 
 # ── Concrete exceptions ───────────────────────────────────────────────
 
-class NotFoundError(AppException):
+
+class NotFoundError(AppError):
     status_code = 404
     error_code = "NOT_FOUND"
     message = "The requested resource was not found."
 
 
-class AuthenticationError(AppException):
+class AuthenticationError(AppError):
     status_code = 401
     error_code = "AUTHENTICATION_ERROR"
     message = "Could not validate credentials."
 
 
-class AuthorizationError(AppException):
+class AuthorizationError(AppError):
     status_code = 403
     error_code = "AUTHORIZATION_ERROR"
     message = "You do not have permission to perform this action."
 
 
-class ValidationError(AppException):
+class ValidationError(AppError):
     status_code = 422
     error_code = "VALIDATION_ERROR"
     message = "Request validation failed."
 
 
-class RateLimitError(AppException):
+class RateLimitError(AppError):
     status_code = 429
     error_code = "RATE_LIMIT_EXCEEDED"
     message = "Too many requests. Please try again later."
 
 
-class ExternalServiceError(AppException):
+class ExternalServiceError(AppError):
     status_code = 502
     error_code = "EXTERNAL_SERVICE_ERROR"
     message = "An external service returned an unexpected error."
 
 
-class ConflictError(AppException):
+class ConflictError(AppError):
     status_code = 409
     error_code = "CONFLICT"
     message = "The request conflicts with the current state of the resource."
@@ -99,8 +101,9 @@ class ConflictError(AppException):
 
 # ── FastAPI exception handlers ─────────────────────────────────────────
 
-async def _app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
-    """Handler for all ``AppException`` sub-classes."""
+
+async def _app_exception_handler(request: Request, exc: AppError) -> JSONResponse:
+    """Handler for all ``AppError`` sub-classes."""
     logger.warning(
         "app_exception",
         error_code=exc.error_code,
@@ -116,7 +119,7 @@ async def _app_exception_handler(request: Request, exc: AppException) -> JSONRes
 
 
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Catch-all for any exception that is not an ``AppException``."""
+    """Catch-all for any exception that is not an ``AppError``."""
     logger.exception(
         "unhandled_exception",
         path=str(request.url),
@@ -136,5 +139,5 @@ async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSON
 
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach exception handlers to the FastAPI application."""
-    app.add_exception_handler(AppException, _app_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(AppError, _app_exception_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, _unhandled_exception_handler)

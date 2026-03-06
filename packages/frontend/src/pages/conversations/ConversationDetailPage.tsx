@@ -162,7 +162,7 @@ export default function ConversationDetailPage() {
                         key={tc.id}
                         className={clsx(
                           'flex items-center gap-1.5 rounded px-2 py-1 text-xs',
-                          msg.role === 'user'
+                          (msg.role as string) === 'user'
                             ? 'bg-white/10 text-white/80'
                             : 'bg-white text-surface-500',
                         )}

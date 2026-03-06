@@ -16,7 +16,7 @@ from autonomocx.models.action import ActionExecution, ActionStatus
 from autonomocx.models.tool import Tool
 
 from .registry import ToolRegistry
-from .validator import ParameterValidator, ValidationResult
+from .validator import ParameterValidator
 
 logger = structlog.get_logger(__name__)
 
@@ -191,7 +191,6 @@ class ToolExecutor:
         max_retries = retry_config.get("max_retries", 2)
         retry_delay = retry_config.get("delay_seconds", 1.0)
 
-        last_exc: Exception | None = None
         for attempt in range(1, max_retries + 2):
             try:
                 if method == "GET":
@@ -204,7 +203,6 @@ class ToolExecutor:
                 resp.raise_for_status()
                 return resp.json()
             except httpx.HTTPStatusError as exc:
-                last_exc = exc
                 logger.warning(
                     "tool_http_error",
                     tool=tool.name,
@@ -217,7 +215,6 @@ class ToolExecutor:
                         error_code="TOOL_HTTP_ERROR",
                     ) from exc
             except httpx.RequestError as exc:
-                last_exc = exc
                 logger.warning(
                     "tool_request_error",
                     tool=tool.name,
@@ -232,6 +229,7 @@ class ToolExecutor:
 
             # Wait before retry
             import asyncio
+
             await asyncio.sleep(retry_delay * attempt)
 
         raise ExternalServiceError(

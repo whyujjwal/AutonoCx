@@ -8,7 +8,7 @@ with ``[REDACTED]`` tokens.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import structlog
 
@@ -36,10 +36,10 @@ _PII_PATTERNS: list[tuple[str, re.Pattern[str], float]] = [
         "credit_card",
         re.compile(
             r"\b(?:"
-            r"4[0-9]{12}(?:[0-9]{3})?|"       # Visa
-            r"5[1-5][0-9]{14}|"                # MasterCard
-            r"3[47][0-9]{13}|"                 # Amex
-            r"6(?:011|5[0-9]{2})[0-9]{12}"     # Discover
+            r"4[0-9]{12}(?:[0-9]{3})?|"  # Visa
+            r"5[1-5][0-9]{14}|"  # MasterCard
+            r"3[47][0-9]{13}|"  # Amex
+            r"6(?:011|5[0-9]{2})[0-9]{12}"  # Discover
             r")\b"
         ),
         0.95,
@@ -47,9 +47,7 @@ _PII_PATTERNS: list[tuple[str, re.Pattern[str], float]] = [
     # Credit card with separators
     (
         "credit_card",
-        re.compile(
-            r"\b(?:\d{4}[\s\-]\d{4}[\s\-]\d{4}[\s\-]\d{4})\b"
-        ),
+        re.compile(r"\b(?:\d{4}[\s\-]\d{4}[\s\-]\d{4}[\s\-]\d{4})\b"),
         0.92,
     ),
     # SSN (US Social Security Number)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -34,16 +34,16 @@ class ToolOut(BaseModel):
     id: UUID
     org_id: UUID
     name: str
-    display_name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    parameters_schema: Optional[dict[str, Any]] = None
-    endpoint_url: Optional[str] = None
-    http_method: Optional[str] = None
-    headers_template: Optional[dict[str, Any]] = None
-    auth_type: Optional[str] = None
-    timeout_seconds: Optional[int] = None
-    retry_config: Optional[dict[str, Any]] = None
+    display_name: str | None = None
+    description: str | None = None
+    category: str | None = None
+    parameters_schema: dict[str, Any] | None = None
+    endpoint_url: str | None = None
+    http_method: str | None = None
+    headers_template: dict[str, Any] | None = None
+    auth_type: str | None = None
+    timeout_seconds: int | None = None
+    retry_config: dict[str, Any] | None = None
     risk_level: RiskLevel
     requires_approval: bool
     is_active: bool
@@ -57,52 +57,50 @@ class ToolOut(BaseModel):
 
 class ToolCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    display_name: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
-    parameters_schema: Optional[dict[str, Any]] = None
-    endpoint_url: Optional[str] = Field(None, max_length=2048)
-    http_method: Optional[str] = Field(None, max_length=10)
-    headers_template: Optional[dict[str, Any]] = None
-    auth_type: Optional[str] = Field(None, max_length=64)
-    auth_config: Optional[dict[str, Any]] = None
-    timeout_seconds: Optional[int] = Field(30, ge=1, le=300)
-    retry_config: Optional[dict[str, Any]] = None
+    display_name: str | None = Field(None, max_length=255)
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
+    parameters_schema: dict[str, Any] | None = None
+    endpoint_url: str | None = Field(None, max_length=2048)
+    http_method: str | None = Field(None, max_length=10)
+    headers_template: dict[str, Any] | None = None
+    auth_type: str | None = Field(None, max_length=64)
+    auth_config: dict[str, Any] | None = None
+    timeout_seconds: int | None = Field(30, ge=1, le=300)
+    retry_config: dict[str, Any] | None = None
     risk_level: RiskLevel = RiskLevel.LOW
     requires_approval: bool = False
     version: str = Field("1.0.0", max_length=32)
 
 
 class ToolUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    display_name: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=128)
-    parameters_schema: Optional[dict[str, Any]] = None
-    endpoint_url: Optional[str] = Field(None, max_length=2048)
-    http_method: Optional[str] = Field(None, max_length=10)
-    headers_template: Optional[dict[str, Any]] = None
-    auth_type: Optional[str] = Field(None, max_length=64)
-    auth_config: Optional[dict[str, Any]] = None
-    timeout_seconds: Optional[int] = Field(None, ge=1, le=300)
-    retry_config: Optional[dict[str, Any]] = None
-    risk_level: Optional[RiskLevel] = None
-    requires_approval: Optional[bool] = None
-    is_active: Optional[bool] = None
-    version: Optional[str] = Field(None, max_length=32)
+    name: str | None = Field(None, min_length=1, max_length=255)
+    display_name: str | None = Field(None, max_length=255)
+    description: str | None = None
+    category: str | None = Field(None, max_length=128)
+    parameters_schema: dict[str, Any] | None = None
+    endpoint_url: str | None = Field(None, max_length=2048)
+    http_method: str | None = Field(None, max_length=10)
+    headers_template: dict[str, Any] | None = None
+    auth_type: str | None = Field(None, max_length=64)
+    auth_config: dict[str, Any] | None = None
+    timeout_seconds: int | None = Field(None, ge=1, le=300)
+    retry_config: dict[str, Any] | None = None
+    risk_level: RiskLevel | None = None
+    requires_approval: bool | None = None
+    is_active: bool | None = None
+    version: str | None = Field(None, max_length=32)
 
 
 class ToolTestRequest(BaseModel):
-    input_params: dict[str, Any] = Field(
-        ..., description="Parameters to pass to the tool"
-    )
+    input_params: dict[str, Any] = Field(..., description="Parameters to pass to the tool")
 
 
 class ToolTestResponse(BaseModel):
     success: bool
-    status_code: Optional[int] = None
-    output: Optional[dict[str, Any]] = None
-    error: Optional[str] = None
+    status_code: int | None = None
+    output: dict[str, Any] | None = None
+    error: str | None = None
     execution_time_ms: int
 
 
@@ -131,9 +129,9 @@ class MessageResponse(BaseModel):
 async def list_org_tools(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    category: Optional[str] = None,
-    is_active: Optional[bool] = None,
-    risk_level: Optional[RiskLevel] = None,
+    category: str | None = None,
+    is_active: bool | None = None,
+    risk_level: RiskLevel | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedTools:
@@ -167,9 +165,7 @@ async def get_tool(
     current_user: User = Depends(get_current_user),
 ) -> ToolOut:
     """Return a specific tool by ID."""
-    tool = await get_tool_by_id(
-        db, tool_id=tool_id, org_id=current_user.org_id
-    )
+    tool = await get_tool_by_id(db, tool_id=tool_id, org_id=current_user.org_id)
     if tool is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -238,9 +234,7 @@ async def delete_existing_tool(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     """Soft-delete a tool. Requires ADMIN role."""
-    success = await delete_tool(
-        db, tool_id=tool_id, org_id=current_user.org_id
-    )
+    success = await delete_tool(db, tool_id=tool_id, org_id=current_user.org_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -262,9 +256,7 @@ async def test_tool_endpoint(
     current_user: User = Depends(get_current_user),
 ) -> ToolTestResponse:
     """Execute a tool with test parameters in a sandboxed context and return the result."""
-    tool = await get_tool_by_id(
-        db, tool_id=tool_id, org_id=current_user.org_id
-    )
+    tool = await get_tool_by_id(db, tool_id=tool_id, org_id=current_user.org_id)
     if tool is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from autonomocx.models.conversation import ChannelType
-
 
 # ---------------------------------------------------------------------------
 # Requests
@@ -19,18 +18,18 @@ from autonomocx.models.conversation import ChannelType
 class ChannelConfigCreate(BaseModel):
     channel_type: ChannelType
     display_name: str = Field(..., min_length=1, max_length=255)
-    agent_id: Optional[uuid.UUID] = None
-    config: Optional[dict[str, Any]] = Field(
+    agent_id: uuid.UUID | None = None
+    config: dict[str, Any] | None = Field(
         None,
         description="Channel-specific configuration (API keys, webhook URLs, etc.)",
     )
 
 
 class ChannelConfigUpdate(BaseModel):
-    display_name: Optional[str] = Field(None, min_length=1, max_length=255)
-    agent_id: Optional[uuid.UUID] = None
-    config: Optional[dict[str, Any]] = None
-    is_active: Optional[bool] = None
+    display_name: str | None = Field(None, min_length=1, max_length=255)
+    agent_id: uuid.UUID | None = None
+    config: dict[str, Any] | None = None
+    is_active: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -43,8 +42,8 @@ class ChannelConfigResponse(BaseModel):
     org_id: uuid.UUID
     channel_type: ChannelType
     display_name: str
-    agent_id: Optional[uuid.UUID] = None
-    config: Optional[dict[str, Any]] = None
+    agent_id: uuid.UUID | None = None
+    config: dict[str, Any] | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -55,6 +54,6 @@ class ChannelConfigResponse(BaseModel):
 class ChannelTestResponse(BaseModel):
     success: bool
     message: str = Field(..., description="Human-readable result or error detail")
-    latency_ms: Optional[float] = Field(
+    latency_ms: float | None = Field(
         None, description="Round-trip time in milliseconds (null on failure)"
     )

@@ -6,7 +6,7 @@ import enum
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     Boolean,
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from .user import User
 
 
-class ActionStatus(str, enum.Enum):
+class ActionStatus(enum.StrEnum):
     PENDING = "pending"
     AWAITING_APPROVAL = "awaiting_approval"
     APPROVED = "approved"
@@ -57,7 +57,7 @@ class ActionExecution(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    message_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    message_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("messages.id", ondelete="SET NULL"),
         nullable=True,
@@ -68,7 +68,7 @@ class ActionExecution(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    agent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("agents.id", ondelete="SET NULL"),
         nullable=True,
@@ -80,52 +80,40 @@ class ActionExecution(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    input_params: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, default=dict, nullable=True
-    )
-    output_result: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
-    )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    risk_score: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(5, 4), nullable=True
-    )
-    risk_factors: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
-    )
-    requires_approval: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
-    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+    input_params: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=dict, nullable=True)
+    output_result: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risk_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+    risk_factors: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    execution_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    idempotency_key: Mapped[Optional[str]] = mapped_column(
+    idempotency_key: Mapped[str | None] = mapped_column(
         String(255), nullable=True, unique=True, index=True
     )
 
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------
-    organization: Mapped["Organization"] = relationship(
+    organization: Mapped[Organization] = relationship(
         "Organization", back_populates="action_executions"
     )
-    conversation: Mapped["Conversation"] = relationship(
+    conversation: Mapped[Conversation] = relationship(
         "Conversation", back_populates="action_executions"
     )
-    message: Mapped[Optional["Message"]] = relationship(
-        "Message", back_populates="action_executions"
-    )
-    tool: Mapped["Tool"] = relationship("Tool", back_populates="action_executions")
-    agent: Mapped[Optional["AgentConfig"]] = relationship(
+    message: Mapped[Message | None] = relationship("Message", back_populates="action_executions")
+    tool: Mapped[Tool] = relationship("Tool", back_populates="action_executions")
+    agent: Mapped[AgentConfig | None] = relationship(
         "AgentConfig", back_populates="action_executions"
     )
-    approver: Mapped[Optional["User"]] = relationship(
+    approver: Mapped[User | None] = relationship(
         "User",
         back_populates="approved_actions",
         foreign_keys=[approved_by],

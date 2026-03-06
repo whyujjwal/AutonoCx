@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Any
 
 import structlog
 
 from autonomocx.models.analytics import CustomerMemory
-from autonomocx.models.conversation import Message, MessageRole
+from autonomocx.models.conversation import Message
 
 logger = structlog.get_logger(__name__)
 
@@ -139,7 +139,8 @@ class ContextAssembler:
             return ""
         parts: list[str] = []
         for mem in memories:
-            label = mem.memory_type.value if hasattr(mem.memory_type, "value") else str(mem.memory_type)
+            mt = mem.memory_type
+            label = mt.value if hasattr(mt, "value") else str(mt)
             parts.append(f"- [{label}] {mem.content}")
         return "\n".join(parts)
 
@@ -157,8 +158,7 @@ class ContextAssembler:
                 sources.append(chunk.source)
         block = (
             "Use the following knowledge to answer the customer's question. "
-            "Cite source numbers when referencing specific information.\n\n"
-            + "\n\n".join(parts)
+            "Cite source numbers when referencing specific information.\n\n" + "\n\n".join(parts)
         )
         return block, sources
 

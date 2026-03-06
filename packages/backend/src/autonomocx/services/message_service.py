@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -27,6 +27,7 @@ logger = structlog.get_logger(__name__)
 # Read
 # ---------------------------------------------------------------------------
 
+
 async def get_messages(
     db: AsyncSession,
     conversation_id: uuid.UUID,
@@ -39,12 +40,7 @@ async def get_messages(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar_one()
 
-    stmt = (
-        base
-        .order_by(Message.created_at.asc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    stmt = base.order_by(Message.created_at.asc()).offset((page - 1) * page_size).limit(page_size)
     rows = (await db.execute(stmt)).scalars().all()
 
     return PaginatedResponse.create(
@@ -58,6 +54,7 @@ async def get_messages(
 # ---------------------------------------------------------------------------
 # Create (low-level)
 # ---------------------------------------------------------------------------
+
 
 async def create_message(
     db: AsyncSession,
@@ -97,6 +94,7 @@ async def create_message(
 # Main AI pipeline entry point
 # ---------------------------------------------------------------------------
 
+
 async def process_customer_message(
     db: AsyncSession,
     redis: Any,  # redis.asyncio.Redis
@@ -115,16 +113,18 @@ async def process_customer_message(
     when a new customer message arrives.
     """
     # --- 1. Persist customer message ---
-    customer_msg = await create_message(db, conversation_id, {
-        "role": MessageRole.CUSTOMER,
-        "content": content,
-        "content_type": ContentType.TEXT,
-    })
+    customer_msg = await create_message(
+        db,
+        conversation_id,
+        {
+            "role": MessageRole.CUSTOMER,
+            "content": content,
+            "content_type": ContentType.TEXT,
+        },
+    )
 
     # --- 2. Load conversation context ---
-    result = await db.execute(
-        select(Conversation).where(Conversation.id == conversation_id)
-    )
+    result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
     conversation = result.scalar_one_or_none()
     if conversation is None:
         raise NotFoundError(f"Conversation {conversation_id} not found.")
@@ -162,15 +162,19 @@ async def process_customer_message(
     elapsed_ms = int((datetime.now(UTC) - start_ts).total_seconds() * 1000)
 
     # --- 4. Persist assistant response ---
-    assistant_msg = await create_message(db, conversation_id, {
-        "role": MessageRole.ASSISTANT,
-        "content": assistant_content,
-        "content_type": ContentType.TEXT,
-        "llm_model_used": model_used,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "latency_ms": elapsed_ms,
-    })
+    assistant_msg = await create_message(
+        db,
+        conversation_id,
+        {
+            "role": MessageRole.ASSISTANT,
+            "content": assistant_content,
+            "content_type": ContentType.TEXT,
+            "llm_model_used": model_used,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "latency_ms": elapsed_ms,
+        },
+    )
 
     logger.info(
         "customer_message_processed",

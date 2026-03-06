@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -28,15 +28,15 @@ class MessageOut(BaseModel):
     id: UUID
     conversation_id: UUID
     role: MessageRole
-    content: Optional[str] = None
+    content: str | None = None
     content_type: ContentType
-    metadata_: Optional[dict[str, Any]] = Field(None, alias="metadata")
-    tool_call_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    llm_model_used: Optional[str] = None
-    latency_ms: Optional[int] = None
+    metadata_: dict[str, Any] | None = Field(None, alias="metadata")
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    llm_model_used: str | None = None
+    latency_ms: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -46,13 +46,14 @@ class SendMessageRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=32000)
     content_type: ContentType = ContentType.TEXT
     role: MessageRole = MessageRole.CUSTOMER
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class SendMessageResponse(BaseModel):
     """Response includes both the sent message and the AI-generated reply (if any)."""
+
     user_message: MessageOut
-    assistant_message: Optional[MessageOut] = None
+    assistant_message: MessageOut | None = None
 
 
 class PaginatedMessages(BaseModel):
@@ -152,7 +153,5 @@ async def create_message(
         user_message=MessageOut.model_validate(result["user_message"]),
     )
     if result.get("assistant_message") is not None:
-        response.assistant_message = MessageOut.model_validate(
-            result["assistant_message"]
-        )
+        response.assistant_message = MessageOut.model_validate(result["assistant_message"])
     return response

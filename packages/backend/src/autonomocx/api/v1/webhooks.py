@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -31,11 +31,12 @@ logger = logging.getLogger(__name__)
 
 class WebhookResponse(BaseModel):
     status: str = "ok"
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class WhatsAppMessage(BaseModel):
     """Simplified WhatsApp inbound message payload."""
+
     from_number: str = Field(..., alias="From")
     to_number: str = Field(..., alias="To")
     body: str = Field("", alias="Body")
@@ -46,14 +47,15 @@ class WhatsAppMessage(BaseModel):
 
 class EmailInbound(BaseModel):
     """Inbound email payload (e.g., from SendGrid Inbound Parse or similar)."""
+
     from_email: str = Field(..., alias="from")
     to_email: str = Field(..., alias="to")
     subject: str = ""
     text: str = ""
-    html: Optional[str] = None
-    headers: Optional[str] = None
-    envelope: Optional[str] = None
-    attachments: Optional[int] = 0
+    html: str | None = None
+    headers: str | None = None
+    envelope: str | None = None
+    attachments: int | None = 0
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +88,7 @@ def _verify_twilio_signature(
     ).digest()
 
     import base64
+
     expected = base64.b64encode(computed).decode("utf-8")
     return hmac.compare_digest(expected, signature)
 
@@ -129,9 +132,7 @@ async def whatsapp_webhook(
         body=params.get("Body", ""),
         message_sid=params.get("MessageSid", ""),
         num_media=int(params.get("NumMedia", "0")),
-        media_urls={
-            k: v for k, v in params.items() if k.startswith("MediaUrl")
-        },
+        media_urls={k: v for k, v in params.items() if k.startswith("MediaUrl")},
     )
     return WebhookResponse(message="WhatsApp message received")
 

@@ -66,23 +66,26 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 # Keys whose values should be fully masked regardless of pattern matches.
-_SENSITIVE_KEYS: frozenset[str] = frozenset({
-    "password",
-    "passwd",
-    "secret",
-    "token",
-    "access_token",
-    "refresh_token",
-    "api_key",
-    "apikey",
-    "authorization",
-    "credit_card",
-    "ssn",
-    "social_security",
-})
+_SENSITIVE_KEYS: frozenset[str] = frozenset(
+    {
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "access_token",
+        "refresh_token",
+        "api_key",
+        "apikey",
+        "authorization",
+        "credit_card",
+        "ssn",
+        "social_security",
+    }
+)
 
 
 # ── Public helpers ─────────────────────────────────────────────────────
+
 
 def mask_pii(value: str) -> str:
     """Return *value* with PII patterns replaced by placeholder labels."""
@@ -110,6 +113,7 @@ def _mask_value(key: str, value: Any) -> Any:
 
 
 # ── Structlog processor ───────────────────────────────────────────────
+
 
 def pii_masking_processor(
     logger: Any,

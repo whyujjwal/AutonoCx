@@ -19,11 +19,7 @@ async def list_workflows(
     org_id: uuid.UUID,
 ) -> list[Workflow]:
     """Return all workflows for *org_id*."""
-    stmt = (
-        select(Workflow)
-        .where(Workflow.org_id == org_id)
-        .order_by(Workflow.name)
-    )
+    stmt = select(Workflow).where(Workflow.org_id == org_id).order_by(Workflow.name)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -33,9 +29,7 @@ async def get_workflow(
     workflow_id: uuid.UUID,
 ) -> Workflow:
     """Return a single workflow with its steps.  Raises ``NotFoundError`` if missing."""
-    result = await db.execute(
-        select(Workflow).where(Workflow.id == workflow_id)
-    )
+    result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     wf = result.scalar_one_or_none()
     if wf is None:
         raise NotFoundError(f"Workflow {workflow_id} not found.")

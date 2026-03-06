@@ -136,8 +136,8 @@ class HallucinationGuard:
 
         # Patterns indicating factual claims
         factual_patterns = [
-            r"\d",               # Contains numbers
-            r"\$",               # Currency
+            r"\d",  # Contains numbers
+            r"\$",  # Currency
             r"\b(?:is|are|was|were|costs?|takes?|requires?|includes?)\b",
             r"\b(?:always|never|every|all|none|must|guaranteed)\b",
         ]

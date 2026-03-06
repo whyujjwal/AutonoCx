@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from autonomocx.models.user import UserRole
-
 
 # ---------------------------------------------------------------------------
 # Requests
@@ -23,9 +21,9 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
+    full_name: str | None = Field(None, min_length=1, max_length=255)
+    role: UserRole | None = None
+    is_active: bool | None = None
 
 
 class UserRoleUpdate(BaseModel):
@@ -44,7 +42,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: UserRole
     is_active: bool
-    last_login_at: Optional[datetime] = None
+    last_login_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

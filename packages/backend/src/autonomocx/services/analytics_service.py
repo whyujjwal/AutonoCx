@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, UTC
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
-from sqlalchemy import case, cast, func, Float, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autonomocx.models.action import ActionExecution, ActionStatus
@@ -20,6 +20,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
+
 
 async def get_dashboard_data(
     db: AsyncSession,
@@ -35,74 +36,87 @@ async def get_dashboard_data(
     last_7d = now - timedelta(days=7)
 
     # --- Conversation counts ---
-    total_conv = (await db.execute(
-        select(func.count())
-        .select_from(Conversation)
-        .where(Conversation.org_id == org_id)
-    )).scalar_one()
-
-    active_conv = (await db.execute(
-        select(func.count())
-        .select_from(Conversation)
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.status.in_([
-                ConversationStatus.ACTIVE,
-                ConversationStatus.WAITING_HUMAN,
-                ConversationStatus.ESCALATED,
-            ]),
+    total_conv = (
+        await db.execute(
+            select(func.count()).select_from(Conversation).where(Conversation.org_id == org_id)
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    new_conv_24h = (await db.execute(
-        select(func.count())
-        .select_from(Conversation)
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.created_at >= last_24h,
+    active_conv = (
+        await db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                Conversation.org_id == org_id,
+                Conversation.status.in_(
+                    [
+                        ConversationStatus.ACTIVE,
+                        ConversationStatus.WAITING_HUMAN,
+                        ConversationStatus.ESCALATED,
+                    ]
+                ),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    resolved_conv_7d = (await db.execute(
-        select(func.count())
-        .select_from(Conversation)
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.status == ConversationStatus.RESOLVED,
-            Conversation.ended_at >= last_7d,
+    new_conv_24h = (
+        await db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                Conversation.org_id == org_id,
+                Conversation.created_at >= last_24h,
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
+
+    resolved_conv_7d = (
+        await db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                Conversation.org_id == org_id,
+                Conversation.status == ConversationStatus.RESOLVED,
+                Conversation.ended_at >= last_7d,
+            )
+        )
+    ).scalar_one()
 
     # --- Pending actions ---
-    pending_actions = (await db.execute(
-        select(func.count())
-        .select_from(ActionExecution)
-        .where(
-            ActionExecution.org_id == org_id,
-            ActionExecution.status == ActionStatus.AWAITING_APPROVAL,
+    pending_actions = (
+        await db.execute(
+            select(func.count())
+            .select_from(ActionExecution)
+            .where(
+                ActionExecution.org_id == org_id,
+                ActionExecution.status == ActionStatus.AWAITING_APPROVAL,
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # --- Average resolution time (last 7 days) ---
-    avg_resolution = (await db.execute(
-        select(func.avg(Conversation.resolution_time_seconds))
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.status == ConversationStatus.RESOLVED,
-            Conversation.ended_at >= last_7d,
+    avg_resolution = (
+        await db.execute(
+            select(func.avg(Conversation.resolution_time_seconds)).where(
+                Conversation.org_id == org_id,
+                Conversation.status == ConversationStatus.RESOLVED,
+                Conversation.ended_at >= last_7d,
+            )
         )
-    )).scalar_one() or 0
+    ).scalar_one() or 0
 
     # --- Messages last 24h ---
-    msgs_24h = (await db.execute(
-        select(func.count())
-        .select_from(Message)
-        .join(Conversation, Message.conversation_id == Conversation.id)
-        .where(
-            Conversation.org_id == org_id,
-            Message.created_at >= last_24h,
+    msgs_24h = (
+        await db.execute(
+            select(func.count())
+            .select_from(Message)
+            .join(Conversation, Message.conversation_id == Conversation.id)
+            .where(
+                Conversation.org_id == org_id,
+                Message.created_at >= last_24h,
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     return {
         "total_conversations": total_conv,
@@ -119,6 +133,7 @@ async def get_dashboard_data(
 # Conversation metrics
 # ---------------------------------------------------------------------------
 
+
 async def get_conversation_metrics(
     db: AsyncSession,
     org_id: uuid.UUID,
@@ -130,19 +145,14 @@ async def get_conversation_metrics(
     Includes daily counts, status breakdown, channel distribution,
     average sentiment, and average resolution time.
     """
-    base = (
-        select(Conversation)
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.created_at >= date_from,
-            Conversation.created_at <= date_to,
-        )
+    base = select(Conversation).where(
+        Conversation.org_id == org_id,
+        Conversation.created_at >= date_from,
+        Conversation.created_at <= date_to,
     )
 
     # Total in range
-    total = (await db.execute(
-        select(func.count()).select_from(base.subquery())
-    )).scalar_one()
+    total = (await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
     # By status
     status_stmt = (
@@ -171,26 +181,28 @@ async def get_conversation_metrics(
     by_channel = {row.channel.value: row.count for row in channel_rows}
 
     # Average sentiment
-    avg_sentiment = (await db.execute(
-        select(func.avg(Conversation.sentiment))
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.created_at >= date_from,
-            Conversation.created_at <= date_to,
-            Conversation.sentiment.is_not(None),
+    avg_sentiment = (
+        await db.execute(
+            select(func.avg(Conversation.sentiment)).where(
+                Conversation.org_id == org_id,
+                Conversation.created_at >= date_from,
+                Conversation.created_at <= date_to,
+                Conversation.sentiment.is_not(None),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # Average resolution time
-    avg_resolution = (await db.execute(
-        select(func.avg(Conversation.resolution_time_seconds))
-        .where(
-            Conversation.org_id == org_id,
-            Conversation.status == ConversationStatus.RESOLVED,
-            Conversation.created_at >= date_from,
-            Conversation.created_at <= date_to,
+    avg_resolution = (
+        await db.execute(
+            select(func.avg(Conversation.resolution_time_seconds)).where(
+                Conversation.org_id == org_id,
+                Conversation.status == ConversationStatus.RESOLVED,
+                Conversation.created_at >= date_from,
+                Conversation.created_at <= date_to,
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # Daily conversation counts
     daily_stmt = (
@@ -208,8 +220,7 @@ async def get_conversation_metrics(
     )
     daily_rows = (await db.execute(daily_stmt)).all()
     daily = [
-        {"date": row.day.isoformat() if row.day else None, "count": row.count}
-        for row in daily_rows
+        {"date": row.day.isoformat() if row.day else None, "count": row.count} for row in daily_rows
     ]
 
     return {
@@ -228,6 +239,7 @@ async def get_conversation_metrics(
 # Action metrics
 # ---------------------------------------------------------------------------
 
+
 async def get_action_metrics(
     db: AsyncSession,
     org_id: uuid.UUID,
@@ -241,9 +253,9 @@ async def get_action_metrics(
         ActionExecution.created_at <= date_to,
     ]
 
-    total = (await db.execute(
-        select(func.count()).select_from(ActionExecution).where(*base_filter)
-    )).scalar_one()
+    total = (
+        await db.execute(select(func.count()).select_from(ActionExecution).where(*base_filter))
+    ).scalar_one()
 
     # By status
     status_stmt = (
@@ -255,13 +267,14 @@ async def get_action_metrics(
     by_status = {row.status.value: row.count for row in status_rows}
 
     # Avg execution time
-    avg_exec = (await db.execute(
-        select(func.avg(ActionExecution.execution_time_ms))
-        .where(
-            *base_filter,
-            ActionExecution.status == ActionStatus.COMPLETED,
+    avg_exec = (
+        await db.execute(
+            select(func.avg(ActionExecution.execution_time_ms)).where(
+                *base_filter,
+                ActionExecution.status == ActionStatus.COMPLETED,
+            )
         )
-    )).scalar_one() or 0
+    ).scalar_one() or 0
 
     # By tool (top 10)
     tool_stmt = (
@@ -272,10 +285,7 @@ async def get_action_metrics(
         .limit(10)
     )
     tool_rows = (await db.execute(tool_stmt)).all()
-    by_tool = [
-        {"tool_id": str(row.tool_id), "count": row.count}
-        for row in tool_rows
-    ]
+    by_tool = [{"tool_id": str(row.tool_id), "count": row.count} for row in tool_rows]
 
     return {
         "total": total,
@@ -288,6 +298,7 @@ async def get_action_metrics(
 # ---------------------------------------------------------------------------
 # Agent metrics
 # ---------------------------------------------------------------------------
+
 
 async def get_agent_metrics(
     db: AsyncSession,
@@ -316,9 +327,7 @@ async def get_agent_metrics(
             "agent_name": row.name,
             "conversation_count": row.conversation_count,
             "message_count": row.message_count,
-            "avg_sentiment": (
-                round(float(row.avg_sentiment), 3) if row.avg_sentiment else None
-            ),
+            "avg_sentiment": (round(float(row.avg_sentiment), 3) if row.avg_sentiment else None),
         }
         for row in rows
     ]
@@ -327,6 +336,7 @@ async def get_agent_metrics(
 # ---------------------------------------------------------------------------
 # Cost breakdown
 # ---------------------------------------------------------------------------
+
 
 async def get_cost_breakdown(
     db: AsyncSession,
@@ -339,7 +349,7 @@ async def get_cost_breakdown(
     Costs are estimated from token counts using approximate per-token rates.
     """
     # Approximate per-1K-token costs (input / output)
-    MODEL_COSTS = {
+    model_costs = {
         "gpt-4o": {"input": 0.005, "output": 0.015},
         "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
         "claude-sonnet-4-20250514": {"input": 0.003, "output": 0.015},
@@ -371,20 +381,22 @@ async def get_cost_breakdown(
         model = row.llm_model_used or "unknown"
         prompt_tokens = row.total_prompt_tokens or 0
         completion_tokens = row.total_completion_tokens or 0
-        rates = MODEL_COSTS.get(model, default_cost)
+        rates = model_costs.get(model, default_cost)
 
         input_cost = (prompt_tokens / 1000) * rates["input"]
         output_cost = (completion_tokens / 1000) * rates["output"]
         model_cost = input_cost + output_cost
         total_cost += model_cost
 
-        breakdown.append({
-            "model": model,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "message_count": row.message_count,
-            "estimated_cost_usd": round(model_cost, 4),
-        })
+        breakdown.append(
+            {
+                "model": model,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "message_count": row.message_count,
+                "estimated_cost_usd": round(model_cost, 4),
+            }
+        )
 
     return {
         "breakdown": breakdown,

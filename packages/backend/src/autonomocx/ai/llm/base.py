@@ -5,8 +5,8 @@ from __future__ import annotations
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import AsyncIterator
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +66,7 @@ class BaseLLMProvider(ABC):
         ...
 
     @abstractmethod
-    async def stream(self, request: LLMRequest) -> AsyncIterator[str]:
+    def stream(self, request: LLMRequest) -> AsyncIterator[str]:
         """Yield content deltas as they arrive from the provider."""
         ...
 
