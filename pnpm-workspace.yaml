@@ -1,0 +1,4 @@
+packages:
+  - "packages/frontend"
+  - "packages/widget"
+  - "packages/shared"

@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL with pgvector ─────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: autonomocx-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: autonomocx
+      POSTGRES_PASSWORD: autonomocx_dev
+      POSTGRES_DB: autonomocx
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autonomocx -d autonomocx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Redis ────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: autonomocx-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # ── Backend (FastAPI) ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../../packages/backend
+      dockerfile: Dockerfile
+    container_name: autonomocx-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      DEBUG: "true"
+      SECRET_KEY: docker-dev-secret-change-in-production
+      DATABASE_URL: postgresql+asyncpg://autonomocx:autonomocx_dev@postgres:5432/autonomocx
+      DATABASE_URL_SYNC: postgresql://autonomocx:autonomocx_dev@postgres:5432/autonomocx
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: docker-dev-jwt-secret-change-in-production
+      CORS_ALLOWED_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ../../packages/backend/src:/app/src:cached
+      - ../../packages/backend/alembic:/app/alembic:cached
+    command: >
+      uv run uvicorn autonomocx.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir /app/src
+
+  # ── Frontend (Vite + React) ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ../../packages/frontend
+      dockerfile: Dockerfile
+    container_name: autonomocx-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+      VITE_WS_URL: ws://localhost:8000/api/v1/chat/ws
+      VITE_APP_NAME: AutonoCX
+    volumes:
+      - ../../packages/frontend/src:/app/src:cached
+      - ../../packages/frontend/public:/app/public:cached
+      - ../../packages/frontend/index.html:/app/index.html:cached
+    command: pnpm dev --host 0.0.0.0 --port 5173
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
