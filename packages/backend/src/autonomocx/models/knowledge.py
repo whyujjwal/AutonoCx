@@ -132,6 +132,20 @@ class Document(TimestampMixin, Base):
         lazy="noload",
     )
 
+    @property
+    def filename(self) -> str:
+        """Alias for ``title`` used by the API schema."""
+        return self.title or "untitled"
+
+    @property
+    def content_type(self) -> str | None:
+        """Derive content type from metadata or file extension."""
+        if self.metadata_:
+            ct = self.metadata_.get("content_type")
+            if ct:
+                return ct  # type: ignore[return-value]
+        return None
+
     def __repr__(self) -> str:
         return f"<Document {self.title!r} status={self.status.value}>"
 

@@ -45,9 +45,10 @@ class ExecutionResult:
 class ToolExecutor:
     """Invoke tools and persist execution records to ``action_executions``."""
 
-    def __init__(self) -> None:
+    def __init__(self, connector_registry: Any = None) -> None:
         self._validator = ParameterValidator()
         self._http_client: httpx.AsyncClient | None = None
+        self._connector_registry = connector_registry
 
     async def _get_http_client(self) -> httpx.AsyncClient:
         if self._http_client is None or self._http_client.is_closed:
@@ -102,7 +103,9 @@ class ToolExecutor:
 
         # Execute
         try:
-            output = await self._invoke(tool, validation.sanitised_params)
+            output = await self._invoke(
+                tool, validation.sanitised_params, org_id=org_id
+            )
         except Exception as exc:
             logger.error(
                 "tool_execution_error",
@@ -157,8 +160,14 @@ class ToolExecutor:
     # Invocation dispatch
     # ------------------------------------------------------------------
 
-    async def _invoke(self, tool: Tool, params: dict[str, Any]) -> dict[str, Any]:
-        """Dispatch to builtin handler or HTTP endpoint."""
+    async def _invoke(
+        self,
+        tool: Tool,
+        params: dict[str, Any],
+        *,
+        org_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        """Dispatch to builtin handler, connector, or HTTP endpoint."""
 
         # 1. Check for builtin handler
         if tool.is_builtin:
@@ -170,7 +179,13 @@ class ToolExecutor:
                 error_code="TOOL_HANDLER_MISSING",
             )
 
-        # 2. HTTP call
+        # 2. Check for connector-backed tool
+        if tool.connector_type:
+            return await self._connector_call(
+                tool, params, org_id=org_id
+            )
+
+        # 3. HTTP call
         if tool.endpoint_url:
             return await self._http_call(tool, params)
 
@@ -178,6 +193,38 @@ class ToolExecutor:
             f"Tool '{tool.name}' has no endpoint or builtin handler",
             error_code="TOOL_NOT_CONFIGURED",
         )
+
+    async def _connector_call(
+        self,
+        tool: Tool,
+        params: dict[str, Any],
+        *,
+        org_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        """Execute a tool via its parent connector."""
+        if self._connector_registry is None:
+            raise ExternalServiceError(
+                "Connector registry not initialised",
+                error_code="CONNECTOR_REGISTRY_MISSING",
+            )
+
+        match = self._connector_registry.get_for_tool(org_id, tool.name)
+        if match is None:
+            raise ExternalServiceError(
+                f"No connector found for tool '{tool.name}'",
+                error_code="CONNECTOR_NOT_FOUND",
+            )
+
+        connector, operation_name = match
+        result = await connector.execute_operation(operation_name, params)
+
+        if not result.success:
+            raise ExternalServiceError(
+                f"Connector operation failed: {result.error}",
+                error_code="CONNECTOR_OPERATION_FAILED",
+            )
+
+        return result.data
 
     async def _http_call(self, tool: Tool, params: dict[str, Any]) -> dict[str, Any]:
         """Execute an HTTP-based tool with retry support."""

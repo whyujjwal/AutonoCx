@@ -15,6 +15,7 @@ from autonomocx.api.v1 import (
     auth,
     channels,
     chat,
+    connectors,
     conversations,
     knowledge,
     messages,
@@ -79,6 +80,9 @@ v1_router.include_router(chat.router)
 
 # Inbound webhooks
 v1_router.include_router(webhooks.router)
+
+# Connectors (CRM integrations)
+v1_router.include_router(connectors.router)
 
 # ---------------------------------------------------------------------------
 # Top-level API router

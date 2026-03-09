@@ -5,7 +5,8 @@ This worker handles the full document processing pipeline:
 1. Fetch the raw document (from S3 or local storage)
 2. Extract text content (PDF, DOCX, HTML, plain text)
 3. Split the content into chunks
-4. Queue chunks for embedding generation
+4. Generate embeddings for each chunk
+5. Persist chunks with embeddings to the database
 
 The worker processes documents whose status is ``PENDING`` and
 transitions them through ``PROCESSING`` -> ``INDEXED`` (or ``FAILED``).
@@ -13,24 +14,34 @@ transitions them through ``PROCESSING`` -> ``INDEXED`` (or ``FAILED``).
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import io
 import uuid
 
 import structlog
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from autonomocx.ai.rag.embeddings import EmbeddingService
 from autonomocx.models.knowledge import Document, DocumentChunk, DocumentStatus, KnowledgeBase
+from autonomocx.services.storage_service import storage_service
 
 logger = structlog.get_logger(__name__)
 
 
 class DocumentProcessor:
-    """Processes uploaded documents into searchable text chunks."""
+    """Processes uploaded documents into searchable text chunks with embeddings."""
 
     def __init__(self, chunk_size: int = 512, chunk_overlap: int = 64) -> None:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self._embedder: EmbeddingService | None = None
+
+    def _get_embedder(self) -> EmbeddingService:
+        if self._embedder is None:
+            self._embedder = EmbeddingService()
+        return self._embedder
 
     async def process_document(self, db: AsyncSession, document_id: uuid.UUID) -> None:
         """Run the full ingestion pipeline for a single document.
@@ -39,9 +50,10 @@ class DocumentProcessor:
             1. Mark document as PROCESSING
             2. Extract text from the source file
             3. Split text into overlapping chunks
-            4. Persist chunks to the database
-            5. Update document status to INDEXED
-            6. Update knowledge base counters
+            4. Generate embeddings for chunks
+            5. Persist chunks with embeddings to the database
+            6. Update document status to INDEXED
+            7. Update knowledge base counters
         """
         # 1. Load and mark as processing
         result = await db.execute(select(Document).where(Document.id == document_id))
@@ -72,32 +84,39 @@ class DocumentProcessor:
                 num_chunks=len(chunks),
             )
 
-            # 5. Persist chunks
-            chunk_models = []
-            for idx, chunk_text in enumerate(chunks):
+            # 5. Generate embeddings
+            embedder = self._get_embedder()
+            embeddings = await embedder.embed_batch(chunks)
+            logger.info(
+                "document_embedded",
+                document_id=str(document_id),
+                num_embeddings=len(embeddings),
+            )
+
+            # 6. Persist chunks with embeddings
+            for idx, (chunk_text, embedding) in enumerate(zip(chunks, embeddings)):
                 chunk = DocumentChunk(
                     id=uuid.uuid4(),
                     document_id=document.id,
                     knowledge_base_id=document.knowledge_base_id,
                     chunk_index=idx,
                     content=chunk_text,
+                    embedding=embedding,
                     token_count=self._estimate_token_count(chunk_text),
                     metadata_={"chunk_index": idx, "total_chunks": len(chunks)},
                 )
-                chunk_models.append(chunk)
                 db.add(chunk)
 
-            # 6. Update document status
+            # 7. Update document status
             document.status = DocumentStatus.INDEXED
             document.chunk_count = len(chunks)
             await db.flush()
 
-            # 7. Update knowledge base counters
+            # 8. Update knowledge base counters
             await db.execute(
                 update(KnowledgeBase)
                 .where(KnowledgeBase.id == document.knowledge_base_id)
                 .values(
-                    document_count=KnowledgeBase.document_count + 1,
                     total_chunks=KnowledgeBase.total_chunks + len(chunks),
                 )
             )
@@ -110,9 +129,14 @@ class DocumentProcessor:
             )
 
         except Exception as exc:
-            document.status = DocumentStatus.FAILED
-            document.error_message = str(exc)
-            await db.commit()
+            await db.rollback()
+            # Re-fetch document after rollback
+            result = await db.execute(select(Document).where(Document.id == document_id))
+            document = result.scalar_one_or_none()
+            if document is not None:
+                document.status = DocumentStatus.FAILED
+                document.error_message = str(exc)[:1000]
+                await db.commit()
             logger.exception(
                 "document_processing_failed",
                 document_id=str(document_id),
@@ -120,10 +144,7 @@ class DocumentProcessor:
             )
 
     async def _extract_text(self, document: Document) -> str:
-        """Extract text content from a document based on its file type.
-
-        Supports: PDF, DOCX, HTML, TXT.
-        """
+        """Extract text content from a document based on its file type."""
         file_type = (document.file_type or "").lower()
 
         if file_type == "pdf":
@@ -132,39 +153,86 @@ class DocumentProcessor:
             return await self._extract_docx(document)
         elif file_type in ("html", "htm"):
             return await self._extract_html(document)
-        elif file_type in ("txt", "md", "csv"):
+        elif file_type in ("txt", "md", "csv", "json"):
             return await self._extract_plain_text(document)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
 
     async def _extract_pdf(self, document: Document) -> str:
         """Extract text from a PDF file using pypdf."""
-        # In production: download from S3, then extract
-        # stub: would use pypdf.PdfReader
+        content = await self._download_file(document)
         logger.info("extracting_pdf", file_path=document.file_path)
-        return ""  # placeholder -- implement with pypdf
+
+        def _read_pdf(data: bytes) -> str:
+            from pypdf import PdfReader
+
+            reader = PdfReader(io.BytesIO(data))
+            pages: list[str] = []
+            for page in reader.pages:
+                text = page.extract_text()
+                if text:
+                    pages.append(text)
+            return "\n\n".join(pages)
+
+        return await asyncio.to_thread(_read_pdf, content)
 
     async def _extract_docx(self, document: Document) -> str:
         """Extract text from a DOCX file using python-docx."""
+        content = await self._download_file(document)
         logger.info("extracting_docx", file_path=document.file_path)
-        return ""  # placeholder -- implement with python-docx
+
+        def _read_docx(data: bytes) -> str:
+            from docx import Document as DocxDocument
+
+            doc = DocxDocument(io.BytesIO(data))
+            parts: list[str] = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    parts.append(para.text)
+            for table in doc.tables:
+                for row in table.rows:
+                    cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                    if cells:
+                        parts.append(" | ".join(cells))
+            return "\n\n".join(parts)
+
+        return await asyncio.to_thread(_read_docx, content)
 
     async def _extract_html(self, document: Document) -> str:
         """Extract text from HTML using BeautifulSoup."""
+        content = await self._download_file(document)
         logger.info("extracting_html", source_url=document.source_url)
-        return ""  # placeholder -- implement with beautifulsoup4
+
+        def _read_html(data: bytes) -> str:
+            from bs4 import BeautifulSoup
+
+            soup = BeautifulSoup(data, "html.parser")
+            # Remove script and style elements
+            for tag in soup(["script", "style", "nav", "footer", "header"]):
+                tag.decompose()
+            text = soup.get_text(separator="\n", strip=True)
+            # Collapse multiple newlines
+            lines = [line.strip() for line in text.splitlines() if line.strip()]
+            return "\n\n".join(lines)
+
+        return await asyncio.to_thread(_read_html, content)
 
     async def _extract_plain_text(self, document: Document) -> str:
         """Read plain text content directly."""
+        content = await self._download_file(document)
         logger.info("extracting_text", file_path=document.file_path)
-        return ""  # placeholder -- read from S3 or filesystem
+        return content.decode("utf-8", errors="replace")
+
+    async def _download_file(self, document: Document) -> bytes:
+        """Download file content from storage."""
+        if not document.file_path:
+            raise ValueError(f"Document {document.id} has no file_path set.")
+        return await storage_service.download_file(document.file_path)
 
     def _split_into_chunks(self, text: str) -> list[str]:
         """Split text into overlapping chunks of approximately ``chunk_size`` tokens.
 
-        Uses a simple word-boundary-aware splitting strategy.  For production,
-        consider using a recursive character text splitter or sentence-aware
-        splitting for better semantic coherence.
+        Uses a simple word-boundary-aware splitting strategy.
         """
         words = text.split()
         if not words:

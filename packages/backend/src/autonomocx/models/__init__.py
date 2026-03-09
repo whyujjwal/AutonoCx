@@ -15,6 +15,7 @@ from .analytics import (
 from .audit import ActorType, AuditLog
 from .base import Base, TimestampMixin
 from .channel import ChannelConfig
+from .connector import ConnectorConfig
 from .conversation import (
     ChannelType,
     ContentType,
@@ -71,6 +72,8 @@ __all__ = [
     "StepType",
     # Channel
     "ChannelConfig",
+    # Connector
+    "ConnectorConfig",
     # Prompt
     "PromptTemplate",
     "PromptVersion",

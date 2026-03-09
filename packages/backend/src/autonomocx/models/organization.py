@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .analytics import CustomerMemory, MetricSnapshot
     from .audit import AuditLog
     from .channel import ChannelConfig
+    from .connector import ConnectorConfig
     from .conversation import Conversation
     from .knowledge import KnowledgeBase
     from .prompt import PromptTemplate
@@ -78,6 +79,9 @@ class Organization(TimestampMixin, Base):
     )
     customer_memories: Mapped[list[CustomerMemory]] = relationship(
         "CustomerMemory", back_populates="organization", lazy="noload"
+    )
+    connector_configs: Mapped[list[ConnectorConfig]] = relationship(
+        "ConnectorConfig", back_populates="organization", lazy="noload"
     )
 
     def __repr__(self) -> str:

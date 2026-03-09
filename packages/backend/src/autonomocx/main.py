@@ -14,6 +14,10 @@ import structlog
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
+from autonomocx.api.router import api_router
+from autonomocx.api.v1.connectors import set_registry
+from autonomocx.connectors import ConnectorRegistry
+from autonomocx.connectors.zendesk import ZendeskConnector
 from autonomocx.core.config import Settings, get_settings
 from autonomocx.core.database import dispose_engine, init_engine
 from autonomocx.core.exceptions import register_exception_handlers
@@ -51,6 +55,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     except Exception:
         logger.warning("redis_unavailable_at_startup")
         # The app can still run with degraded rate-limiting / caching.
+
+    # ── Connector registry ────────────────────────────────────────
+    registry = ConnectorRegistry()
+    registry.register_type("zendesk", ZendeskConnector)
+    set_registry(registry)
+    logger.info("connector_registry_initialised", types=["zendesk"])
 
     logger.info("app_ready", host=settings.host, port=settings.port)
 
@@ -126,8 +136,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             pass
         return {"status": "ok", "redis": redis_ok}
 
-    # ── API routers would be included here ─────────────────────────
-    # e.g. app.include_router(v1_router, prefix=settings.api_prefix)
+    # ── API routers ───────────────────────────────────────────────
+    app.include_router(api_router)
 
     return app
 

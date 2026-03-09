@@ -27,6 +27,7 @@ import AuditLogPage from '@/pages/audit/AuditLogPage';
 import SettingsPage from '@/pages/settings/SettingsPage';
 import UsersPage from '@/pages/settings/UsersPage';
 import SecurityPage from '@/pages/settings/SecurityPage';
+import ConnectorsPage from '@/pages/settings/ConnectorsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/users', element: <UsersPage /> },
           { path: 'settings/security', element: <SecurityPage /> },
+          { path: 'settings/connectors', element: <ConnectorsPage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

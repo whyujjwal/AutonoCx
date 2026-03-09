@@ -13,6 +13,7 @@ import {
   BarChart3,
   ScrollText,
   Settings,
+  Plug,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ const navItems = [
 
 const settingsItems = [
   { to: '/settings', label: 'General', icon: Settings },
+  { to: '/settings/connectors', label: 'Integrations', icon: Plug },
 ];
 
 export function Sidebar() {

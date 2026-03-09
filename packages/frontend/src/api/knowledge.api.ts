@@ -5,40 +5,68 @@ import type {
   KBDocument,
   KBCreateRequest,
   KBSearchRequest,
-  KBSearchResult,
+  KBSearchResponse,
+  PaginatedKBs,
+  PaginatedDocs,
 } from '@/types/knowledge.types';
-import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types/api.types';
 
 export const knowledgeApi = {
-  listKBs(params?: PaginationParams) {
-    return apiClient.get<ApiResponse<PaginatedResponse<KnowledgeBase>>>(ENDPOINTS.KNOWLEDGE_BASES, {
-      params,
-    });
+  listKBs(params?: { page?: number; page_size?: number; is_active?: boolean }) {
+    return apiClient.get<PaginatedKBs>(ENDPOINTS.KNOWLEDGE_BASES, { params });
   },
 
   getKB(id: string) {
-    return apiClient.get<ApiResponse<KnowledgeBase & { documents: KBDocument[] }>>(
-      `${ENDPOINTS.KNOWLEDGE_BASES}/${id}`,
-    );
+    return apiClient.get<KnowledgeBase>(`${ENDPOINTS.KNOWLEDGE_BASES}/${id}`);
   },
 
   createKB(data: KBCreateRequest) {
-    return apiClient.post<ApiResponse<KnowledgeBase>>(ENDPOINTS.KNOWLEDGE_BASES, data);
+    return apiClient.post<KnowledgeBase>(ENDPOINTS.KNOWLEDGE_BASES, data);
   },
 
-  uploadDocument(kbId: string, file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post<ApiResponse<KBDocument>>(
+  deleteKB(id: string) {
+    return apiClient.delete(`${ENDPOINTS.KNOWLEDGE_BASES}/${id}`);
+  },
+
+  listDocuments(kbId: string, params?: { page?: number; page_size?: number }) {
+    return apiClient.get<PaginatedDocs>(
       `${ENDPOINTS.KNOWLEDGE_BASES}/${kbId}/documents`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } },
+      { params },
     );
   },
 
-  searchKB(kbId: string, data: KBSearchRequest) {
-    return apiClient.post<ApiResponse<KBSearchResult[]>>(
-      `${ENDPOINTS.KNOWLEDGE_BASES}/${kbId}/search`,
+  getDocument(kbId: string, docId: string) {
+    return apiClient.get<KBDocument>(
+      `${ENDPOINTS.KNOWLEDGE_BASES}/${kbId}/documents/${docId}`,
+    );
+  },
+
+  uploadDocument(kbId: string, file: File, onUploadProgress?: (progress: number) => void) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<KBDocument>(
+      `${ENDPOINTS.KNOWLEDGE_BASES}/${kbId}/documents`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: onUploadProgress
+          ? (event) => {
+              const percent = event.total ? Math.round((event.loaded * 100) / event.total) : 0;
+              onUploadProgress(percent);
+            }
+          : undefined,
+      },
+    );
+  },
+
+  deleteDocument(kbId: string, docId: string) {
+    return apiClient.delete(
+      `${ENDPOINTS.KNOWLEDGE_BASES}/${kbId}/documents/${docId}`,
+    );
+  },
+
+  search(data: KBSearchRequest) {
+    return apiClient.post<KBSearchResponse>(
+      `${ENDPOINTS.KNOWLEDGE_BASES}/search`,
       data,
     );
   },

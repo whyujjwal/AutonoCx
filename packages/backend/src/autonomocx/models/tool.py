@@ -60,6 +60,7 @@ class Tool(TimestampMixin, Base):
     requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_builtin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    connector_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
     version: Mapped[str] = mapped_column(String(32), default="1.0.0", nullable=False)
 
     # ------------------------------------------------------------------

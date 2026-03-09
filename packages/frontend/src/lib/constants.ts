@@ -20,6 +20,7 @@ export const ENDPOINTS = {
   CHANNELS: '/channels',
   AUDIT: '/audit',
   USERS: '/users',
+  CONNECTORS: '/connectors',
 } as const;
 
 export const ROLES = {

@@ -6,7 +6,16 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +32,7 @@ from autonomocx.services.knowledge import (
     update_knowledge_base,
     upload_document,
 )
+from autonomocx.services.storage_service import storage_service
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
@@ -271,6 +281,38 @@ async def list_documents(
     )
 
 
+@router.get(
+    "/{kb_id}/documents/{doc_id}",
+    response_model=DocumentOut,
+    summary="Get document status",
+)
+async def get_document(
+    kb_id: UUID,
+    doc_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentOut:
+    """Return a specific document (useful for polling ingestion status)."""
+    from sqlalchemy import select
+
+    from autonomocx.models.knowledge import Document
+
+    kb = await get_knowledge_base(db, kb_id=kb_id, org_id=current_user.org_id)
+    if kb is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+
+    result = await db.execute(
+        select(Document).where(
+            Document.id == doc_id,
+            Document.knowledge_base_id == kb_id,
+        )
+    )
+    doc = result.scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return DocumentOut.model_validate(doc)
+
+
 @router.post(
     "/{kb_id}/documents",
     response_model=DocumentOut,
@@ -280,6 +322,7 @@ async def list_documents(
 )
 async def upload_doc(
     kb_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="Document file to upload"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -313,14 +356,35 @@ async def upload_doc(
             f"Supported: PDF, TXT, DOCX, MD, CSV, JSON",
         )
 
+    # Read file content
+    content_bytes = await file.read()
+    await file.seek(0)
+
+    # Save to storage
+    filename = file.filename or "unnamed"
+    storage_key = f"documents/{current_user.org_id}/{kb_id}/{filename}"
+    await storage_service.upload_file(
+        storage_key, content_bytes, file.content_type or ""
+    )
+
     doc = await upload_document(
         db,
         kb_id=kb_id,
         org_id=current_user.org_id,
-        filename=file.filename or "unnamed",
+        filename=filename,
         content_type=file.content_type,
         file=file,
     )
+
+    # Set file_path on the document so processor can find it
+    doc.file_path = storage_key
+    await db.flush()
+
+    # Trigger background processing
+    from autonomocx.workers.ingestion_task import process_document_background
+
+    background_tasks.add_task(process_document_background, doc.id)
+
     return DocumentOut.model_validate(doc)
 
 

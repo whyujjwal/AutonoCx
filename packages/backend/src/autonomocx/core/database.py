@@ -74,6 +74,11 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
             await session.close()
 
 
+def async_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Return the session factory for use outside of FastAPI request lifecycle."""
+    return _get_session_factory()
+
+
 async def init_engine() -> None:
     """Initialise the async engine (called during app startup)."""
     _get_engine()
